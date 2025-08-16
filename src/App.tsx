@@ -10,6 +10,18 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
+// Admin pages
+import ManageTeachers from "./pages/admin/ManageTeachers";
+import TahunAjaran from "./pages/admin/TahunAjaran";
+import MataPelajaran from "./pages/admin/MataPelajaran";
+import Kelas from "./pages/admin/Kelas";
+import JenisUjian from "./pages/admin/JenisUjian";
+import Pengumuman from "./pages/admin/Pengumuman";
+
+// Teacher pages
+import UploadSoal from "./pages/guru/UploadSoal";
+import RiwayatSoal from "./pages/guru/RiwayatSoal";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -27,6 +39,51 @@ const App = () => (
                   <Index />
                 </ProtectedRoute>
               } />
+              
+              {/* Admin Routes */}
+              <Route path="/admin/guru" element={
+                <ProtectedRoute requireAdmin>
+                  <ManageTeachers />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/tahun-ajaran" element={
+                <ProtectedRoute requireAdmin>
+                  <TahunAjaran />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/mapel" element={
+                <ProtectedRoute requireAdmin>
+                  <MataPelajaran />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/kelas" element={
+                <ProtectedRoute requireAdmin>
+                  <Kelas />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/jenis-ujian" element={
+                <ProtectedRoute requireAdmin>
+                  <JenisUjian />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/pengumuman" element={
+                <ProtectedRoute requireAdmin>
+                  <Pengumuman />
+                </ProtectedRoute>
+              } />
+              
+              {/* Teacher Routes */}
+              <Route path="/guru/upload" element={
+                <ProtectedRoute>
+                  <UploadSoal />
+                </ProtectedRoute>
+              } />
+              <Route path="/guru/riwayat" element={
+                <ProtectedRoute>
+                  <RiwayatSoal />
+                </ProtectedRoute>
+              } />
+              
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
