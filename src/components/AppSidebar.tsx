@@ -35,6 +35,7 @@ const adminItems = [
   { title: 'Mata Pelajaran', url: '/admin/mapel', icon: BookOpen },
   { title: 'Kelas', url: '/admin/kelas', icon: GraduationCap },
   { title: 'Jenis Ujian', url: '/admin/jenis-ujian', icon: FileText },
+  { title: 'Daftar Soal', url: '/admin/daftar-soal', icon: FileText },
   { title: 'Pengumuman', url: '/admin/pengumuman', icon: Megaphone },
 ];
 

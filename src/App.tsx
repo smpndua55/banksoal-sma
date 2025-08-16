@@ -16,6 +16,7 @@ import TahunAjaran from "./pages/admin/TahunAjaran";
 import MataPelajaran from "./pages/admin/MataPelajaran";
 import Kelas from "./pages/admin/Kelas";
 import JenisUjian from "./pages/admin/JenisUjian";
+import DaftarSoal from "./pages/admin/DaftarSoal";
 import Pengumuman from "./pages/admin/Pengumuman";
 
 // Teacher pages
@@ -64,6 +65,11 @@ const App = () => (
               <Route path="/admin/jenis-ujian" element={
                 <ProtectedRoute requireAdmin>
                   <JenisUjian />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/daftar-soal" element={
+                <ProtectedRoute requireAdmin>
+                  <DaftarSoal />
                 </ProtectedRoute>
               } />
               <Route path="/admin/pengumuman" element={
