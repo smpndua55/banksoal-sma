@@ -94,7 +94,7 @@ const DaftarSoal = () => {
         .from('soal_uploads')
         .select(`
           *,
-          guru:guru_id(nama),
+          guru:profiles!soal_uploads_guru_id_fkey(nama),
           tahun_ajaran:tahun_ajaran_id(nama),
           mapel:mapel_id(nama),
           kelas:kelas_id(nama),

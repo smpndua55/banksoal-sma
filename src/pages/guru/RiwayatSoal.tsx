@@ -3,12 +3,16 @@ import { AppSidebar } from '@/components/AppSidebar';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { FileText, Download, Trash2, Eye } from 'lucide-react';
+import { FileText, Download, Trash2, Eye, Edit } from 'lucide-react';
 
 interface SoalUpload {
   id: string;
@@ -16,23 +20,69 @@ interface SoalUpload {
   file_url: string;
   file_size: number;
   uploaded_at: string;
+  tahun_ajaran_id: string;
+  mapel_id: string;
+  kelas_id: string;
+  jenis_ujian_id: string;
   tahun_ajaran: { nama: string };
   mapel: { nama: string };
   kelas: { nama: string };
   jenis_ujian: { nama: string };
 }
 
+interface SelectOption {
+  id: string;
+  nama: string;
+}
+
 const RiwayatSoal = () => {
   const [soalUploads, setSoalUploads] = useState<SoalUpload[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingSoal, setEditingSoal] = useState<SoalUpload | null>(null);
+  const [uploading, setUploading] = useState(false);
+  
+  const [tahunAjaran, setTahunAjaran] = useState<SelectOption[]>([]);
+  const [mapel, setMapel] = useState<SelectOption[]>([]);
+  const [kelas, setKelas] = useState<SelectOption[]>([]);
+  const [jenisUjian, setJenisUjian] = useState<SelectOption[]>([]);
+  
+  const [editFormData, setEditFormData] = useState({
+    tahun_ajaran_id: '',
+    mapel_id: '',
+    kelas_id: '',
+    jenis_ujian_id: '',
+    file: null as File | null,
+    replaceFile: false
+  });
+  
   const { toast } = useToast();
   const { user } = useAuth();
 
   useEffect(() => {
     if (user) {
+      fetchSelectOptions();
       fetchSoalUploads();
     }
   }, [user]);
+
+  const fetchSelectOptions = async () => {
+    try {
+      const [tahunAjaranResult, mapelResult, kelasResult, jenisUjianResult] = await Promise.all([
+        supabase.from('tahun_ajaran').select('id, nama').order('nama'),
+        supabase.from('mapel').select('id, nama').order('nama'),
+        supabase.from('kelas').select('id, nama').order('nama'),
+        supabase.from('jenis_ujian').select('id, nama').order('nama')
+      ]);
+
+      if (tahunAjaranResult.data) setTahunAjaran(tahunAjaranResult.data);
+      if (mapelResult.data) setMapel(mapelResult.data);
+      if (kelasResult.data) setKelas(kelasResult.data);
+      if (jenisUjianResult.data) setJenisUjian(jenisUjianResult.data);
+    } catch (error) {
+      console.error('Error fetching options:', error);
+    }
+  };
 
   const fetchSoalUploads = async () => {
     if (!user) return;
@@ -61,6 +111,135 @@ const RiwayatSoal = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleEdit = (soal: SoalUpload) => {
+    setEditingSoal(soal);
+    setEditFormData({
+      tahun_ajaran_id: soal.tahun_ajaran_id,
+      mapel_id: soal.mapel_id,
+      kelas_id: soal.kelas_id,
+      jenis_ujian_id: soal.jenis_ujian_id,
+      file: null,
+      replaceFile: false
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type
+      const allowedTypes = [
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'image/jpeg',
+        'image/png',
+        'image/jpg'
+      ];
+      
+      if (!allowedTypes.includes(file.type)) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Format file tidak didukung. Gunakan PDF, DOC, DOCX, JPG, JPEG, atau PNG",
+        });
+        return;
+      }
+
+      // Validate file size (max 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Ukuran file terlalu besar. Maksimal 10MB",
+        });
+        return;
+      }
+
+      setEditFormData({ ...editFormData, file, replaceFile: true });
+    }
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!editingSoal || !user) return;
+
+    setUploading(true);
+    
+    try {
+      let fileUrl = editingSoal.file_url;
+      let fileName = editingSoal.file_name;
+      let fileSize = editingSoal.file_size;
+
+      // If replacing file, upload new file
+      if (editFormData.replaceFile && editFormData.file) {
+        // Delete old file
+        const oldUrlParts = editingSoal.file_url.split('/');
+        const oldFilePath = oldUrlParts.slice(-3).join('/');
+        
+        await supabase.storage
+          .from('soal-files')
+          .remove([oldFilePath]);
+
+        // Upload new file
+        const fileExt = editFormData.file.name.split('.').pop();
+        const newFileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+        const newFilePath = `soal/${user.id}/${newFileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('soal-files')
+          .upload(newFilePath, editFormData.file);
+
+        if (uploadError) throw uploadError;
+
+        // Get new public URL
+        const { data: { publicUrl } } = supabase.storage
+          .from('soal-files')
+          .getPublicUrl(newFilePath);
+
+        fileUrl = publicUrl;
+        fileName = editFormData.file.name;
+        fileSize = editFormData.file.size;
+      }
+
+      // Update database
+      const { error: dbError } = await supabase
+        .from('soal_uploads')
+        .update({
+          tahun_ajaran_id: editFormData.tahun_ajaran_id,
+          mapel_id: editFormData.mapel_id,
+          kelas_id: editFormData.kelas_id,
+          jenis_ujian_id: editFormData.jenis_ujian_id,
+          file_url: fileUrl,
+          file_name: fileName,
+          file_size: fileSize
+        })
+        .eq('id', editingSoal.id);
+
+      if (dbError) throw dbError;
+
+      toast({
+        title: "Berhasil",
+        description: "Soal berhasil diperbarui",
+      });
+
+      setIsEditDialogOpen(false);
+      setEditingSoal(null);
+      fetchSoalUploads();
+
+    } catch (error: any) {
+      console.error('Error updating soal:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Gagal memperbarui soal",
+      });
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -245,6 +424,13 @@ const RiwayatSoal = () => {
                             <Button
                               variant="outline"
                               size="sm"
+                              onClick={() => handleEdit(item)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
                               onClick={() => handleDelete(item.id, item.file_url)}
                             >
                               <Trash2 className="h-4 w-4" />
@@ -259,6 +445,139 @@ const RiwayatSoal = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Edit Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Edit Soal</DialogTitle>
+              <DialogDescription>
+                Perbarui informasi soal dan/atau ganti file
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleEditSubmit} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="edit_tahun_ajaran_id">Tahun Ajaran</Label>
+                  <Select
+                    value={editFormData.tahun_ajaran_id}
+                    onValueChange={(value) => setEditFormData({ ...editFormData, tahun_ajaran_id: value })}
+                    required
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Pilih tahun ajaran" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {tahunAjaran.map((item) => (
+                        <SelectItem key={item.id} value={item.id}>
+                          {item.nama}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="edit_mapel_id">Mata Pelajaran</Label>
+                  <Select
+                    value={editFormData.mapel_id}
+                    onValueChange={(value) => setEditFormData({ ...editFormData, mapel_id: value })}
+                    required
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Pilih mata pelajaran" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {mapel.map((item) => (
+                        <SelectItem key={item.id} value={item.id}>
+                          {item.nama}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="edit_kelas_id">Kelas</Label>
+                  <Select
+                    value={editFormData.kelas_id}
+                    onValueChange={(value) => setEditFormData({ ...editFormData, kelas_id: value })}
+                    required
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Pilih kelas" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {kelas.map((item) => (
+                        <SelectItem key={item.id} value={item.id}>
+                          {item.nama}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="edit_jenis_ujian_id">Jenis Ujian</Label>
+                  <Select
+                    value={editFormData.jenis_ujian_id}
+                    onValueChange={(value) => setEditFormData({ ...editFormData, jenis_ujian_id: value })}
+                    required
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Pilih jenis ujian" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {jenisUjian.map((item) => (
+                        <SelectItem key={item.id} value={item.id}>
+                          {item.nama}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="edit_file">Ganti File (Opsional)</Label>
+                <Input
+                  id="edit_file"
+                  type="file"
+                  onChange={handleFileChange}
+                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                  className="cursor-pointer"
+                />
+                <p className="text-sm text-muted-foreground mt-1">
+                  Kosongkan jika tidak ingin mengganti file. Format: PDF, DOC, DOCX, JPG, JPEG, PNG (Max: 10MB)
+                </p>
+                {editFormData.file && (
+                  <div className="mt-2 p-2 bg-muted rounded-md">
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-4 w-4" />
+                      <span className="text-sm">{editFormData.file.name}</span>
+                      <span className="text-xs text-muted-foreground">
+                        ({(editFormData.file.size / 1024 / 1024).toFixed(2)} MB)
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <DialogFooter>
+                <Button type="submit" disabled={uploading}>
+                  {uploading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2"></div>
+                      Memperbarui...
+                    </>
+                  ) : (
+                    'Perbarui Soal'
+                  )}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );
