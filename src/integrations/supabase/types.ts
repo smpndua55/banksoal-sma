@@ -14,16 +14,235 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      jenis_ujian: {
+        Row: {
+          created_at: string
+          id: string
+          nama: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nama: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nama?: string
+        }
+        Relationships: []
+      }
+      kelas: {
+        Row: {
+          created_at: string
+          id: string
+          nama: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nama: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nama?: string
+        }
+        Relationships: []
+      }
+      mapel: {
+        Row: {
+          created_at: string
+          id: string
+          nama: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nama: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nama?: string
+        }
+        Relationships: []
+      }
+      pengumuman: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          isi: string
+          judul: string
+          tanggal: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          isi: string
+          judul: string
+          tanggal?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          isi?: string
+          judul?: string
+          tanggal?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          id: string
+          nama: string
+          role: Database["public"]["Enums"]["user_role"]
+          updated_at: string
+          user_id: string
+          username: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nama: string
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+          user_id: string
+          username: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nama?: string
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+          user_id?: string
+          username?: string
+        }
+        Relationships: []
+      }
+      soal_uploads: {
+        Row: {
+          file_name: string
+          file_size: number | null
+          file_url: string
+          guru_id: string
+          id: string
+          jenis_ujian_id: string
+          kelas_id: string
+          mapel_id: string
+          tahun_ajaran_id: string
+          uploaded_at: string
+        }
+        Insert: {
+          file_name: string
+          file_size?: number | null
+          file_url: string
+          guru_id: string
+          id?: string
+          jenis_ujian_id: string
+          kelas_id: string
+          mapel_id: string
+          tahun_ajaran_id: string
+          uploaded_at?: string
+        }
+        Update: {
+          file_name?: string
+          file_size?: number | null
+          file_url?: string
+          guru_id?: string
+          id?: string
+          jenis_ujian_id?: string
+          kelas_id?: string
+          mapel_id?: string
+          tahun_ajaran_id?: string
+          uploaded_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "soal_uploads_guru_id_fkey"
+            columns: ["guru_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "soal_uploads_jenis_ujian_id_fkey"
+            columns: ["jenis_ujian_id"]
+            isOneToOne: false
+            referencedRelation: "jenis_ujian"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "soal_uploads_kelas_id_fkey"
+            columns: ["kelas_id"]
+            isOneToOne: false
+            referencedRelation: "kelas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "soal_uploads_mapel_id_fkey"
+            columns: ["mapel_id"]
+            isOneToOne: false
+            referencedRelation: "mapel"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "soal_uploads_tahun_ajaran_id_fkey"
+            columns: ["tahun_ajaran_id"]
+            isOneToOne: false
+            referencedRelation: "tahun_ajaran"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tahun_ajaran: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          nama: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          nama: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          nama?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_role: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["user_role"]
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["user_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      user_role: "admin" | "guru"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +369,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      user_role: ["admin", "guru"],
+    },
   },
 } as const
