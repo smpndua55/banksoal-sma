@@ -94,11 +94,11 @@ const DaftarSoal = () => {
         .from('soal_uploads')
         .select(`
           *,
-          guru:profiles!soal_uploads_guru_id_fkey(nama),
-          tahun_ajaran:tahun_ajaran_id(nama),
-          mapel:mapel_id(nama),
-          kelas:kelas_id(nama),
-          jenis_ujian:jenis_ujian_id(nama)
+          guru:profiles(nama),
+          tahun_ajaran(nama),
+          mapel(nama),
+          kelas(nama),
+          jenis_ujian(nama)
         `, { count: 'exact' });
 
       // Apply search filter
