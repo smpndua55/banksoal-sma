@@ -1,18 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/useAuth';
-import { BookOpen, LogIn, UserPlus, Eye, EyeOff } from 'lucide-react';
+import { BookOpen, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const Auth: React.FC = () => {
   const { user, signIn, signUp, loading } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [error, setError] = useState<string>('');
+  const [successMessage, setSuccessMessage] = useState<string>('');
   
   // Login form state
   const [loginEmail, setLoginEmail] = useState('');
@@ -21,6 +23,7 @@ const Auth: React.FC = () => {
   // Signup form state
   const [signupEmail, setSignupEmail] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [signupNama, setSignupNama] = useState('');
   const [signupUsername, setSignupUsername] = useState('');
 
@@ -37,38 +40,72 @@ const Auth: React.FC = () => {
     );
   }
 
+  const clearMessages = () => {
+    setError('');
+    setSuccessMessage('');
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    clearMessages();
     setIsLoading(true);
     
-    await signIn(loginEmail, loginPassword);
-    
-    setIsLoading(false);
+    try {
+      const result = await signIn(loginEmail, loginPassword);
+      if (result?.error) {
+        setError(result.error);
+      }
+    } catch (err) {
+      setError('Terjadi kesalahan saat masuk. Silakan coba lagi.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
+    clearMessages();
     
-    const { error } = await signUp(signupEmail, signupPassword, signupNama, signupUsername);
-    
-    if (!error) {
-      // Clear form on successful signup
-      setSignupEmail('');
-      setSignupPassword('');
-      setSignupNama('');
-      setSignupUsername('');
+    // Validasi password
+    if (signupPassword !== confirmPassword) {
+      setError('Password dan konfirmasi password tidak cocok');
+      return;
     }
     
-    setIsLoading(false);
+    if (signupPassword.length < 6) {
+      setError('Password harus minimal 6 karakter');
+      return;
+    }
+    
+    setIsLoading(true);
+    
+    try {
+      const result = await signUp(signupEmail, signupPassword, signupNama, signupUsername);
+      
+      if (result?.error) {
+        setError(result.error);
+      } else {
+        // Clear form on successful signup
+        setSignupEmail('');
+        setSignupPassword('');
+        setConfirmPassword('');
+        setSignupNama('');
+        setSignupUsername('');
+        setSuccessMessage('Pendaftaran berhasil! Silakan masuk dengan akun Anda.');
+      }
+    } catch (err) {
+      setError('Terjadi kesalahan saat mendaftar. Silakan coba lagi.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         {/* Logo and Title */}
         <div className="text-center">
-          <div className="mx-auto h-12 w-12 flex items-center justify-center bg-blue-600 rounded-lg">
+          <div className="mx-auto h-12 w-12 flex items-center justify-center bg-blue-600 rounded-lg shadow-lg">
             <BookOpen className="h-7 w-7 text-white" />
           </div>
           <h2 className="mt-4 text-3xl font-bold tracking-tight text-gray-900">
@@ -81,19 +118,39 @@ const Auth: React.FC = () => {
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow-lg sm:rounded-lg sm:px-10 border border-gray-200">
-          <Tabs defaultValue="login" className="w-full">
+        <div className="bg-white py-8 px-4 shadow-xl sm:rounded-lg sm:px-10 border border-gray-200">
+          {/* Error Alert */}
+          {error && (
+            <Alert className="mb-6 border-red-200 bg-red-50">
+              <AlertCircle className="h-4 w-4 text-red-600" />
+              <AlertDescription className="text-red-700">
+                {error}
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Success Alert */}
+          {successMessage && (
+            <Alert className="mb-6 border-green-200 bg-green-50">
+              <AlertCircle className="h-4 w-4 text-green-600" />
+              <AlertDescription className="text-green-700">
+                {successMessage}
+              </AlertDescription>
+            </Alert>
+          )}
+
+          <Tabs defaultValue="login" className="w-full" onValueChange={clearMessages}>
             {/* Tab Headers */}
             <TabsList className="grid w-full grid-cols-2 mb-8 bg-gray-100 p-1 rounded-lg">
               <TabsTrigger 
                 value="login"
-                className="data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm text-gray-600 font-medium"
+                className="data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm text-gray-600 font-medium transition-all"
               >
                 Masuk
               </TabsTrigger>
               <TabsTrigger 
                 value="signup"
-                className="data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm text-gray-600 font-medium"
+                className="data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm text-gray-600 font-medium transition-all"
               >
                 Daftar
               </TabsTrigger>
@@ -103,43 +160,43 @@ const Auth: React.FC = () => {
             <TabsContent value="login" className="space-y-6">
               <form onSubmit={handleLogin} className="space-y-6">
                 <div>
-                  <Label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                  <Label htmlFor="login-email" className="block text-sm font-medium text-gray-700">
                     Email
                   </Label>
                   <div className="mt-1">
                     <Input
-                      id="email"
+                      id="login-email"
                       name="email"
                       type="email"
                       autoComplete="email"
                       required
                       value={loginEmail}
                       onChange={(e) => setLoginEmail(e.target.value)}
-                      className="block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
+                      className="block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm transition-colors"
                       placeholder="Masukkan email Anda"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <Label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                  <Label htmlFor="login-password" className="block text-sm font-medium text-gray-700">
                     Password
                   </Label>
                   <div className="mt-1 relative">
                     <Input
-                      id="password"
+                      id="login-password"
                       name="password"
                       type={showPassword ? "text" : "password"}
                       autoComplete="current-password"
                       required
                       value={loginPassword}
                       onChange={(e) => setLoginPassword(e.target.value)}
-                      className="block w-full rounded-md border border-gray-300 px-3 py-2 pr-10 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
+                      className="block w-full rounded-md border border-gray-300 px-3 py-2 pr-10 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm transition-colors"
                       placeholder="Masukkan password Anda"
                     />
                     <button
                       type="button"
-                      className="absolute inset-y-0 right-0 flex items-center pr-3"
+                      className="absolute inset-y-0 right-0 flex items-center pr-3 transition-colors"
                       onClick={() => setShowPassword(!showPassword)}
                     >
                       {showPassword ? (
@@ -165,7 +222,7 @@ const Auth: React.FC = () => {
                   </div>
 
                   <div className="text-sm">
-                    <a href="#" className="font-medium text-blue-600 hover:text-blue-500">
+                    <a href="#" className="font-medium text-blue-600 hover:text-blue-500 transition-colors">
                       Lupa password?
                     </a>
                   </div>
@@ -175,7 +232,7 @@ const Auth: React.FC = () => {
                   <Button
                     type="submit"
                     disabled={isLoading}
-                    className="flex w-full justify-center rounded-md border border-transparent bg-blue-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex w-full justify-center rounded-md border border-transparent bg-blue-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     {isLoading ? (
                       <div className="flex items-center">
@@ -195,38 +252,38 @@ const Auth: React.FC = () => {
               <form onSubmit={handleSignup} className="space-y-6">
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                   <div>
-                    <Label htmlFor="nama" className="block text-sm font-medium text-gray-700">
+                    <Label htmlFor="signup-nama" className="block text-sm font-medium text-gray-700">
                       Nama Lengkap
                     </Label>
                     <div className="mt-1">
                       <Input
-                        id="nama"
+                        id="signup-nama"
                         name="nama"
                         type="text"
                         autoComplete="name"
                         required
                         value={signupNama}
                         onChange={(e) => setSignupNama(e.target.value)}
-                        className="block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
+                        className="block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm transition-colors"
                         placeholder="Nama lengkap"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <Label htmlFor="username" className="block text-sm font-medium text-gray-700">
+                    <Label htmlFor="signup-username" className="block text-sm font-medium text-gray-700">
                       Username
                     </Label>
                     <div className="mt-1">
                       <Input
-                        id="username"
+                        id="signup-username"
                         name="username"
                         type="text"
                         autoComplete="username"
                         required
                         value={signupUsername}
                         onChange={(e) => setSignupUsername(e.target.value)}
-                        className="block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
+                        className="block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm transition-colors"
                         placeholder="Username"
                       />
                     </div>
@@ -246,7 +303,7 @@ const Auth: React.FC = () => {
                       required
                       value={signupEmail}
                       onChange={(e) => setSignupEmail(e.target.value)}
-                      className="block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
+                      className="block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm transition-colors"
                       placeholder="Masukkan email Anda"
                     />
                   </div>
@@ -260,17 +317,49 @@ const Auth: React.FC = () => {
                     <Input
                       id="signup-password"
                       name="password"
-                      type={showConfirmPassword ? "text" : "password"}
+                      type={showPassword ? "text" : "password"}
                       autoComplete="new-password"
                       required
                       value={signupPassword}
                       onChange={(e) => setSignupPassword(e.target.value)}
-                      className="block w-full rounded-md border border-gray-300 px-3 py-2 pr-10 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
+                      className="block w-full rounded-md border border-gray-300 px-3 py-2 pr-10 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm transition-colors"
                       placeholder="Masukkan password Anda"
+                      minLength={6}
                     />
                     <button
                       type="button"
-                      className="absolute inset-y-0 right-0 flex items-center pr-3"
+                      className="absolute inset-y-0 right-0 flex items-center pr-3 transition-colors"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+                      ) : (
+                        <Eye className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="confirm-password" className="block text-sm font-medium text-gray-700">
+                    Konfirmasi Password
+                  </Label>
+                  <div className="mt-1 relative">
+                    <Input
+                      id="confirm-password"
+                      name="confirmPassword"
+                      type={showConfirmPassword ? "text" : "password"}
+                      autoComplete="new-password"
+                      required
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      className="block w-full rounded-md border border-gray-300 px-3 py-2 pr-10 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm transition-colors"
+                      placeholder="Konfirmasi password Anda"
+                      minLength={6}
+                    />
+                    <button
+                      type="button"
+                      className="absolute inset-y-0 right-0 flex items-center pr-3 transition-colors"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     >
                       {showConfirmPassword ? (
@@ -286,7 +375,7 @@ const Auth: React.FC = () => {
                   <Button
                     type="submit"
                     disabled={isLoading}
-                    className="flex w-full justify-center rounded-md border border-transparent bg-blue-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex w-full justify-center rounded-md border border-transparent bg-blue-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     {isLoading ? (
                       <div className="flex items-center">
@@ -301,11 +390,11 @@ const Auth: React.FC = () => {
 
                 <div className="text-xs text-gray-600 text-center">
                   Dengan mendaftar, Anda menyetujui{' '}
-                  <a href="#" className="font-medium text-blue-600 hover:text-blue-500">
+                  <a href="#" className="font-medium text-blue-600 hover:text-blue-500 transition-colors">
                     Syarat & Ketentuan
                   </a>{' '}
                   dan{' '}
-                  <a href="#" className="font-medium text-blue-600 hover:text-blue-500">
+                  <a href="#" className="font-medium text-blue-600 hover:text-blue-500 transition-colors">
                     Kebijakan Privasi
                   </a>
                 </div>
@@ -321,7 +410,7 @@ const Auth: React.FC = () => {
               </div>
               <div className="ml-3">
                 <p className="text-sm text-blue-700">
-                  <strong>Info:</strong> Password default untuk guru adalah <code className="bg-blue-100 px-1 rounded">guru123456</code>
+                  <strong>Info:</strong> Password default untuk guru adalah <code className="bg-blue-100 px-1 rounded font-mono">guru123456</code>
                 </p>
               </div>
             </div>
