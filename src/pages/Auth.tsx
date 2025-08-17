@@ -6,11 +6,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/useAuth';
-import { BookOpen, LogIn, UserPlus } from 'lucide-react';
+import { BookOpen, LogIn, UserPlus, Eye, EyeOff } from 'lucide-react';
 
 const Auth: React.FC = () => {
   const { user, signIn, signUp, loading } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
   // Login form state
   const [loginEmail, setLoginEmail] = useState('');
@@ -29,8 +31,8 @@ const Auth: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     );
   }
@@ -62,223 +64,278 @@ const Auth: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
-      {/* Main Content */}
-      <div className="flex-1 flex items-center justify-center px-4 py-8 sm:px-6 lg:px-8">
-        <div className="w-full max-w-sm sm:max-w-md">
-          {/* Header */}
-          <div className="text-center mb-6 sm:mb-8">
-            <div className="flex items-center justify-center gap-3 mb-4 sm:mb-6">
-              <div className="p-2 sm:p-3 bg-primary/10 rounded-full">
-                <BookOpen className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
+    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+        {/* Logo and Title */}
+        <div className="text-center">
+          <div className="mx-auto h-12 w-12 flex items-center justify-center bg-blue-600 rounded-lg">
+            <BookOpen className="h-7 w-7 text-white" />
+          </div>
+          <h2 className="mt-4 text-3xl font-bold tracking-tight text-gray-900">
+            Bank Soal
+          </h2>
+          <p className="mt-2 text-sm text-gray-600">
+            Sistem Manajemen Soal Ujian
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="bg-white py-8 px-4 shadow-lg sm:rounded-lg sm:px-10 border border-gray-200">
+          <Tabs defaultValue="login" className="w-full">
+            {/* Tab Headers */}
+            <TabsList className="grid w-full grid-cols-2 mb-8 bg-gray-100 p-1 rounded-lg">
+              <TabsTrigger 
+                value="login"
+                className="data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm text-gray-600 font-medium"
+              >
+                Masuk
+              </TabsTrigger>
+              <TabsTrigger 
+                value="signup"
+                className="data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm text-gray-600 font-medium"
+              >
+                Daftar
+              </TabsTrigger>
+            </TabsList>
+
+            {/* Login Form */}
+            <TabsContent value="login" className="space-y-6">
+              <form onSubmit={handleLogin} className="space-y-6">
+                <div>
+                  <Label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                    Email
+                  </Label>
+                  <div className="mt-1">
+                    <Input
+                      id="email"
+                      name="email"
+                      type="email"
+                      autoComplete="email"
+                      required
+                      value={loginEmail}
+                      onChange={(e) => setLoginEmail(e.target.value)}
+                      className="block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
+                      placeholder="Masukkan email Anda"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                    Password
+                  </Label>
+                  <div className="mt-1 relative">
+                    <Input
+                      id="password"
+                      name="password"
+                      type={showPassword ? "text" : "password"}
+                      autoComplete="current-password"
+                      required
+                      value={loginPassword}
+                      onChange={(e) => setLoginPassword(e.target.value)}
+                      className="block w-full rounded-md border border-gray-300 px-3 py-2 pr-10 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
+                      placeholder="Masukkan password Anda"
+                    />
+                    <button
+                      type="button"
+                      className="absolute inset-y-0 right-0 flex items-center pr-3"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+                      ) : (
+                        <Eye className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <input
+                      id="remember-me"
+                      name="remember-me"
+                      type="checkbox"
+                      className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <Label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
+                      Ingat saya
+                    </Label>
+                  </div>
+
+                  <div className="text-sm">
+                    <a href="#" className="font-medium text-blue-600 hover:text-blue-500">
+                      Lupa password?
+                    </a>
+                  </div>
+                </div>
+
+                <div>
+                  <Button
+                    type="submit"
+                    disabled={isLoading}
+                    className="flex w-full justify-center rounded-md border border-transparent bg-blue-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isLoading ? (
+                      <div className="flex items-center">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Memproses...
+                      </div>
+                    ) : (
+                      'Masuk'
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </TabsContent>
+
+            {/* Signup Form */}
+            <TabsContent value="signup" className="space-y-6">
+              <form onSubmit={handleSignup} className="space-y-6">
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                  <div>
+                    <Label htmlFor="nama" className="block text-sm font-medium text-gray-700">
+                      Nama Lengkap
+                    </Label>
+                    <div className="mt-1">
+                      <Input
+                        id="nama"
+                        name="nama"
+                        type="text"
+                        autoComplete="name"
+                        required
+                        value={signupNama}
+                        onChange={(e) => setSignupNama(e.target.value)}
+                        className="block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
+                        placeholder="Nama lengkap"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="username" className="block text-sm font-medium text-gray-700">
+                      Username
+                    </Label>
+                    <div className="mt-1">
+                      <Input
+                        id="username"
+                        name="username"
+                        type="text"
+                        autoComplete="username"
+                        required
+                        value={signupUsername}
+                        onChange={(e) => setSignupUsername(e.target.value)}
+                        className="block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
+                        placeholder="Username"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="signup-email" className="block text-sm font-medium text-gray-700">
+                    Email
+                  </Label>
+                  <div className="mt-1">
+                    <Input
+                      id="signup-email"
+                      name="email"
+                      type="email"
+                      autoComplete="email"
+                      required
+                      value={signupEmail}
+                      onChange={(e) => setSignupEmail(e.target.value)}
+                      className="block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
+                      placeholder="Masukkan email Anda"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="signup-password" className="block text-sm font-medium text-gray-700">
+                    Password
+                  </Label>
+                  <div className="mt-1 relative">
+                    <Input
+                      id="signup-password"
+                      name="password"
+                      type={showConfirmPassword ? "text" : "password"}
+                      autoComplete="new-password"
+                      required
+                      value={signupPassword}
+                      onChange={(e) => setSignupPassword(e.target.value)}
+                      className="block w-full rounded-md border border-gray-300 px-3 py-2 pr-10 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
+                      placeholder="Masukkan password Anda"
+                    />
+                    <button
+                      type="button"
+                      className="absolute inset-y-0 right-0 flex items-center pr-3"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    >
+                      {showConfirmPassword ? (
+                        <EyeOff className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+                      ) : (
+                        <Eye className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <Button
+                    type="submit"
+                    disabled={isLoading}
+                    className="flex w-full justify-center rounded-md border border-transparent bg-blue-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isLoading ? (
+                      <div className="flex items-center">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Memproses...
+                      </div>
+                    ) : (
+                      'Daftar'
+                    )}
+                  </Button>
+                </div>
+
+                <div className="text-xs text-gray-600 text-center">
+                  Dengan mendaftar, Anda menyetujui{' '}
+                  <a href="#" className="font-medium text-blue-600 hover:text-blue-500">
+                    Syarat & Ketentuan
+                  </a>{' '}
+                  dan{' '}
+                  <a href="#" className="font-medium text-blue-600 hover:text-blue-500">
+                    Kebijakan Privasi
+                  </a>
+                </div>
+              </form>
+            </TabsContent>
+          </Tabs>
+
+          {/* Default Password Info */}
+          <div className="mt-6 p-3 bg-blue-50 border border-blue-200 rounded-md">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <div className="h-2 w-2 bg-blue-400 rounded-full mt-2"></div>
               </div>
-              <div>
-                <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-slate-100">Bank Soal</h1>
-                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1">
-                  Sistem Manajemen Soal Ujian
+              <div className="ml-3">
+                <p className="text-sm text-blue-700">
+                  <strong>Info:</strong> Password default untuk guru adalah <code className="bg-blue-100 px-1 rounded">guru123456</code>
                 </p>
               </div>
             </div>
           </div>
-
-          {/* Auth Card */}
-          <Card className="shadow-xl border-0 bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm">
-            <Tabs defaultValue="login" className="w-full">
-              {/* Tab Navigation */}
-              <TabsList className="grid w-full grid-cols-2 h-11 sm:h-12 bg-slate-100 dark:bg-slate-700 p-1 mb-0">
-                <TabsTrigger 
-                  value="login" 
-                  className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-medium data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md"
-                >
-                  <LogIn className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                  <span className="hidden xs:inline">Masuk</span>
-                  <span className="xs:hidden">Login</span>
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="signup" 
-                  className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-medium data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-md"
-                >
-                  <UserPlus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                  <span className="hidden xs:inline">Daftar</span>
-                  <span className="xs:hidden">Register</span>
-                </TabsTrigger>
-              </TabsList>
-
-              {/* Login Tab */}
-              <TabsContent value="login" className="space-y-0 mt-0">
-                <CardHeader className="pb-4 sm:pb-6 pt-4 sm:pt-6 px-4 sm:px-6">
-                  <CardTitle className="text-xl sm:text-2xl font-semibold text-center text-slate-900 dark:text-slate-100">
-                    Selamat Datang
-                  </CardTitle>
-                  <CardDescription className="text-center text-slate-600 dark:text-slate-400 text-sm">
-                    Masukkan kredensial Anda untuk mengakses sistem
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6">
-                  <form onSubmit={handleLogin} className="space-y-4 sm:space-y-5">
-                    <div className="space-y-2">
-                      <Label htmlFor="login-email" className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                        Alamat Email
-                      </Label>
-                      <Input
-                        id="login-email"
-                        type="email"
-                        value={loginEmail}
-                        onChange={(e) => setLoginEmail(e.target.value)}
-                        placeholder="nama@example.com"
-                        className="h-11 sm:h-12 border-slate-200 dark:border-slate-600 focus:border-primary focus:ring-primary/20 text-base"
-                        required
-                        autoComplete="email"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="login-password" className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                        Kata Sandi
-                      </Label>
-                      <Input
-                        id="login-password"
-                        type="password"
-                        value={loginPassword}
-                        onChange={(e) => setLoginPassword(e.target.value)}
-                        placeholder="••••••••"
-                        className="h-11 sm:h-12 border-slate-200 dark:border-slate-600 focus:border-primary focus:ring-primary/20 text-base"
-                        required
-                        autoComplete="current-password"
-                      />
-                    </div>
-                    <Button 
-                      type="submit" 
-                      className="w-full h-11 sm:h-12 text-sm font-semibold bg-primary hover:bg-primary/90 transition-colors mt-6" 
-                      disabled={isLoading}
-                    >
-                      {isLoading ? (
-                        <div className="flex items-center gap-2">
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                          Memproses...
-                        </div>
-                      ) : (
-                        'Masuk ke Sistem'
-                      )}
-                    </Button>
-                  </form>
-                </CardContent>
-              </TabsContent>
-
-              {/* Signup Tab */}
-              <TabsContent value="signup" className="space-y-0 mt-0">
-                <CardHeader className="pb-4 sm:pb-6 pt-4 sm:pt-6 px-4 sm:px-6">
-                  <CardTitle className="text-xl sm:text-2xl font-semibold text-center text-slate-900 dark:text-slate-100">
-                    Buat Akun Baru
-                  </CardTitle>
-                  <CardDescription className="text-center text-slate-600 dark:text-slate-400 text-sm">
-                    Daftarkan diri Anda sebagai guru
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="px-4 sm:px-6 pb-4 sm:pb-6">
-                  <form onSubmit={handleSignup} className="space-y-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="signup-nama" className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                          Nama Lengkap
-                        </Label>
-                        <Input
-                          id="signup-nama"
-                          type="text"
-                          value={signupNama}
-                          onChange={(e) => setSignupNama(e.target.value)}
-                          placeholder="Nama lengkap"
-                          className="h-10 sm:h-11 border-slate-200 dark:border-slate-600 focus:border-primary focus:ring-primary/20 text-base"
-                          required
-                          autoComplete="name"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="signup-username" className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                          Username
-                        </Label>
-                        <Input
-                          id="signup-username"
-                          type="text"
-                          value={signupUsername}
-                          onChange={(e) => setSignupUsername(e.target.value)}
-                          placeholder="username"
-                          className="h-10 sm:h-11 border-slate-200 dark:border-slate-600 focus:border-primary focus:ring-primary/20 text-base"
-                          required
-                          autoComplete="username"
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="signup-email" className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                        Alamat Email
-                      </Label>
-                      <Input
-                        id="signup-email"
-                        type="email"
-                        value={signupEmail}
-                        onChange={(e) => setSignupEmail(e.target.value)}
-                        placeholder="nama@example.com"
-                        className="h-10 sm:h-11 border-slate-200 dark:border-slate-600 focus:border-primary focus:ring-primary/20 text-base"
-                        required
-                        autoComplete="email"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="signup-password" className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                        Kata Sandi
-                      </Label>
-                      <Input
-                        id="signup-password"
-                        type="password"
-                        value={signupPassword}
-                        onChange={(e) => setSignupPassword(e.target.value)}
-                        placeholder="••••••••"
-                        className="h-10 sm:h-11 border-slate-200 dark:border-slate-600 focus:border-primary focus:ring-primary/20 text-base"
-                        required
-                        autoComplete="new-password"
-                      />
-                    </div>
-                    <Button 
-                      type="submit" 
-                      className="w-full h-11 sm:h-12 text-sm font-semibold bg-primary hover:bg-primary/90 transition-colors mt-6" 
-                      disabled={isLoading}
-                    >
-                      {isLoading ? (
-                        <div className="flex items-center gap-2">
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                          Memproses...
-                        </div>
-                      ) : (
-                        'Daftar Akun'
-                      )}
-                    </Button>
-                  </form>
-                </CardContent>
-              </TabsContent>
-            </Tabs>
-          </Card>
-
-          {/* Password Info */}
-          <div className="text-center mt-4 sm:mt-6">
-            <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-              <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0"></div>
-              <p className="text-xs sm:text-sm text-blue-700 dark:text-blue-300">
-                Password default guru: <code className="font-mono font-semibold bg-blue-100 dark:bg-blue-800 px-1 rounded">guru123456</code>
-              </p>
-            </div>
-          </div>
         </div>
-      </div>
 
-      {/* Footer */}
-      <footer className="bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border-t border-slate-200 dark:border-slate-700 py-4 sm:py-6">
-        <div className="text-center px-4">
-          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
-            Bank Soal Created by{' '}
-            <span className="font-semibold text-slate-900 dark:text-slate-100">Rudy Susanto</span>
+        {/* Footer */}
+        <div className="text-center mt-8">
+          <p className="text-sm text-gray-500">
+            © 2024 Bank Soal. Dibuat oleh{' '}
+            <span className="font-medium text-gray-700">Rudy Susanto</span>
           </p>
         </div>
-      </footer>
+      </div>
     </div>
   );
 };
