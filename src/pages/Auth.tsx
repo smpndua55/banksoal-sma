@@ -8,7 +8,97 @@ import { BookOpen, Eye, EyeOff, AlertCircle, Lock, Mail, User, Book } from 'luci
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const Auth: React.FC = () => {
-  // ... (bagian state dan fungsi tetap sama seperti sebelumnya)
+  const { user, signIn, signUp, loading } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState<string>('');
+  
+  // Login form state
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  
+  // Signup form state
+  const [signupEmail, setSignupEmail] = useState('');
+  const [signupPassword, setSignupPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [signupNama, setSignupNama] = useState('');
+  const [signupUsername, setSignupUsername] = useState('');
+  
+  // Tabs state
+  const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login');
+
+  // Redirect if already authenticated
+  if (user) {
+    return <Navigate to="/" replace />;
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  const clearMessages = () => {
+    setError('');
+  };
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    clearMessages();
+    setIsLoading(true);
+    
+    try {
+      const result = await signIn(loginEmail, loginPassword);
+      if (result?.error) {
+        setError(result.error);
+      }
+    } catch (err) {
+      setError('Terjadi kesalahan saat masuk. Silakan coba lagi.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    clearMessages();
+    
+    // Validasi password
+    if (signupPassword !== confirmPassword) {
+      setError('Password dan konfirmasi password tidak cocok');
+      return;
+    }
+    
+    if (signupPassword.length < 6) {
+      setError('Password harus minimal 6 karakter');
+      return;
+    }
+    
+    setIsLoading(true);
+    
+    try {
+      const result = await signUp(signupEmail, signupPassword, signupNama, signupUsername);
+      
+      if (result?.error) {
+        setError(result.error);
+      } else {
+        // Clear form on successful signup
+        setSignupEmail('');
+        setSignupPassword('');
+        setConfirmPassword('');
+        setSignupNama('');
+        setSignupUsername('');
+        setActiveTab('login');
+        setError(''); // Clear error on success
+      }
+    } catch (err) {
+      setError('Terjadi kesalahan saat mendaftar. Silakan coba lagi.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
