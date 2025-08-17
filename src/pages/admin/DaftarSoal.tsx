@@ -38,11 +38,11 @@ const DaftarSoal = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState({
-    tahun_ajaran_id: '',
-    mapel_id: '',
-    kelas_id: '',
-    jenis_ujian_id: '',
-    guru_id: ''
+    tahun_ajaran_id: 'all',
+    mapel_id: 'all',
+    kelas_id: 'all',
+    jenis_ujian_id: 'all',
+    guru_id: 'all'
   });
   const [filterOptions, setFilterOptions] = useState<FilterOptions>({
     tahunAjaran: [],
@@ -107,19 +107,19 @@ const DaftarSoal = () => {
       }
 
       // Apply filters
-      if (filters.tahun_ajaran_id) {
+      if (filters.tahun_ajaran_id && filters.tahun_ajaran_id !== 'all') {
         query = query.eq('tahun_ajaran_id', filters.tahun_ajaran_id);
       }
-      if (filters.mapel_id) {
+      if (filters.mapel_id && filters.mapel_id !== 'all') {
         query = query.eq('mapel_id', filters.mapel_id);
       }
-      if (filters.kelas_id) {
+      if (filters.kelas_id && filters.kelas_id !== 'all') {
         query = query.eq('kelas_id', filters.kelas_id);
       }
-      if (filters.jenis_ujian_id) {
+      if (filters.jenis_ujian_id && filters.jenis_ujian_id !== 'all') {
         query = query.eq('jenis_ujian_id', filters.jenis_ujian_id);
       }
-      if (filters.guru_id) {
+      if (filters.guru_id && filters.guru_id !== 'all') {
         query = query.eq('guru_id', filters.guru_id);
       }
 
@@ -161,11 +161,11 @@ const DaftarSoal = () => {
 
   const clearFilters = () => {
     setFilters({
-      tahun_ajaran_id: '',
-      mapel_id: '',
-      kelas_id: '',
-      jenis_ujian_id: '',
-      guru_id: ''
+      tahun_ajaran_id: 'all',
+      mapel_id: 'all',
+      kelas_id: 'all',
+      jenis_ujian_id: 'all',
+      guru_id: 'all'
     });
     setSearchTerm('');
     setCurrentPage(1);
@@ -295,7 +295,7 @@ const DaftarSoal = () => {
                       <SelectValue placeholder="Semua guru" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Semua guru</SelectItem>
+                      <SelectItem value="all">Semua guru</SelectItem>
                       {filterOptions.guru.map((item) => (
                         <SelectItem key={item.user_id} value={item.user_id}>
                           {item.nama}
@@ -315,7 +315,7 @@ const DaftarSoal = () => {
                       <SelectValue placeholder="Semua tahun" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Semua tahun</SelectItem>
+                      <SelectItem value="all">Semua tahun</SelectItem>
                       {filterOptions.tahunAjaran.map((item) => (
                         <SelectItem key={item.id} value={item.id}>
                           {item.nama}
@@ -335,7 +335,7 @@ const DaftarSoal = () => {
                       <SelectValue placeholder="Semua mapel" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Semua mapel</SelectItem>
+                      <SelectItem value="all">Semua mapel</SelectItem>
                       {filterOptions.mapel.map((item) => (
                         <SelectItem key={item.id} value={item.id}>
                           {item.nama}
@@ -355,7 +355,7 @@ const DaftarSoal = () => {
                       <SelectValue placeholder="Semua kelas" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Semua kelas</SelectItem>
+                      <SelectItem value="all">Semua kelas</SelectItem>
                       {filterOptions.kelas.map((item) => (
                         <SelectItem key={item.id} value={item.id}>
                           {item.nama}
@@ -375,7 +375,7 @@ const DaftarSoal = () => {
                       <SelectValue placeholder="Semua jenis" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Semua jenis</SelectItem>
+                      <SelectItem value="all">Semua jenis</SelectItem>
                       {filterOptions.jenisUjian.map((item) => (
                         <SelectItem key={item.id} value={item.id}>
                           {item.nama}
