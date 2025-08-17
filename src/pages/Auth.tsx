@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/useAuth';
-import { BookOpen, LogIn, UserPlus, Eye, EyeOff, Info } from 'lucide-react';
+import { BookOpen, LogIn, UserPlus, Eye, EyeOff, AlertCircle } from 'lucide-react';
 
 const Auth: React.FC = () => {
   const { user, signIn, signUp, loading } = useAuth();
@@ -31,8 +31,8 @@ const Auth: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-600 border-t-transparent"></div>
+      <div className="min-h-screen flex items-center justify-center bg-slate-100">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
       </div>
     );
   }
@@ -64,200 +64,186 @@ const Auth: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      {/* Header */}
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="flex justify-center">
-          <div className="flex items-center gap-3 p-4 bg-white rounded-2xl shadow-sm border border-gray-100">
-            <div className="p-2 bg-blue-600 rounded-xl">
-              <BookOpen className="w-8 h-8 text-white" />
+    <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        <Card className="bg-white shadow-xl border-0">
+          {/* Header dengan Logo */}
+          <CardHeader className="text-center space-y-4 pb-6">
+            <div className="flex justify-center">
+              <div className="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center">
+                <BookOpen className="w-8 h-8 text-white" />
+              </div>
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Bank Soal</h1>
-              <p className="text-sm text-gray-600">Sistem Manajemen Soal Ujian</p>
+              <CardTitle className="text-2xl font-bold text-gray-900">
+                Bank Soal
+              </CardTitle>
+              <CardDescription className="text-gray-600 text-base">
+                Sistem Manajemen Soal Ujian
+              </CardDescription>
             </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Form */}
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <Card className="bg-white shadow-lg border border-gray-200">
-          <CardHeader className="text-center pb-6">
-            <CardTitle className="text-2xl font-semibold text-gray-900">
-              Selamat Datang
-            </CardTitle>
-            <CardDescription className="text-gray-600">
-              Masuk atau daftar untuk mengakses sistem
-            </CardDescription>
           </CardHeader>
 
-          <CardContent className="px-6 pb-6">
+          {/* Form Content */}
+          <CardContent className="px-6 pb-8">
             <Tabs defaultValue="login" className="w-full">
-              {/* Tab Headers */}
-              <TabsList className="grid w-full grid-cols-2 mb-6 bg-gray-100 p-1 h-12">
+              {/* Tab Navigation */}
+              <TabsList className="grid w-full grid-cols-2 mb-8 bg-gray-100 h-12">
                 <TabsTrigger 
                   value="login"
-                  className="data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm text-gray-600 font-medium"
+                  className="data-[state=active]:bg-white data-[state=active]:shadow-sm font-medium"
                 >
                   <LogIn className="w-4 h-4 mr-2" />
-                  Masuk
+                  Login
                 </TabsTrigger>
                 <TabsTrigger 
                   value="signup"
-                  className="data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm text-gray-600 font-medium"
+                  className="data-[state=active]:bg-white data-[state=active]:shadow-sm font-medium"
                 >
                   <UserPlus className="w-4 h-4 mr-2" />
-                  Daftar
+                  Register
                 </TabsTrigger>
               </TabsList>
 
-              {/* Login Form */}
-              <TabsContent value="login" className="space-y-6">
-                <form onSubmit={handleLogin} className="space-y-6">
-                  <div>
-                    <Label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                      Email
+              {/* Login Tab */}
+              <TabsContent value="login" className="space-y-0">
+                <form onSubmit={handleLogin} className="space-y-5">
+                  <div className="space-y-2">
+                    <Label htmlFor="login-email" className="text-sm font-medium text-gray-700">
+                      Email Address
                     </Label>
                     <Input
-                      id="email"
+                      id="login-email"
                       type="email"
-                      autoComplete="email"
-                      required
                       value={loginEmail}
                       onChange={(e) => setLoginEmail(e.target.value)}
-                      className="w-full h-12 px-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                      placeholder="Masukkan email Anda"
+                      className="h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                      placeholder="Enter your email"
+                      required
                     />
                   </div>
 
-                  <div>
-                    <Label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="login-password" className="text-sm font-medium text-gray-700">
                       Password
                     </Label>
                     <div className="relative">
                       <Input
-                        id="password"
+                        id="login-password"
                         type={showPassword ? "text" : "password"}
-                        autoComplete="current-password"
-                        required
                         value={loginPassword}
                         onChange={(e) => setLoginPassword(e.target.value)}
-                        className="w-full h-12 px-4 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                        placeholder="Masukkan password Anda"
+                        className="h-12 pr-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                        placeholder="Enter your password"
+                        required
                       />
                       <button
                         type="button"
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
                         onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                       >
                         {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                       </button>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between pt-2">
                     <label className="flex items-center">
-                      <input 
-                        type="checkbox" 
-                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" 
+                      <input
+                        type="checkbox"
+                        className="w-4 h-4 text-blue-500 border-gray-300 rounded focus:ring-blue-500"
                       />
-                      <span className="ml-2 text-sm text-gray-600">Ingat saya</span>
+                      <span className="ml-2 text-sm text-gray-600">Remember me</span>
                     </label>
-                    <a href="#" className="text-sm font-medium text-blue-600 hover:text-blue-500 transition-colors">
-                      Lupa password?
+                    <a href="#" className="text-sm text-blue-500 hover:text-blue-600 font-medium">
+                      Forgot password?
                     </a>
                   </div>
 
                   <Button
                     type="submit"
                     disabled={isLoading}
-                    className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full h-12 bg-blue-500 hover:bg-blue-600 text-white font-semibold text-base mt-6"
                   >
                     {isLoading ? (
                       <div className="flex items-center justify-center">
                         <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent mr-2"></div>
-                        Memproses...
+                        Signing in...
                       </div>
                     ) : (
-                      'Masuk ke Sistem'
+                      'Sign In'
                     )}
                   </Button>
                 </form>
               </TabsContent>
 
-              {/* Signup Form */}
-              <TabsContent value="signup" className="space-y-6">
-                <form onSubmit={handleSignup} className="space-y-6">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="nama" className="block text-sm font-medium text-gray-700 mb-2">
-                        Nama Lengkap
+              {/* Register Tab */}
+              <TabsContent value="signup" className="space-y-0">
+                <form onSubmit={handleSignup} className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-nama" className="text-sm font-medium text-gray-700">
+                        Full Name
                       </Label>
                       <Input
-                        id="nama"
+                        id="signup-nama"
                         type="text"
-                        autoComplete="name"
-                        required
                         value={signupNama}
                         onChange={(e) => setSignupNama(e.target.value)}
-                        className="w-full h-11 px-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                        placeholder="Nama lengkap"
+                        className="h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                        placeholder="Full name"
+                        required
                       />
                     </div>
-
-                    <div>
-                      <Label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-username" className="text-sm font-medium text-gray-700">
                         Username
                       </Label>
                       <Input
-                        id="username"
+                        id="signup-username"
                         type="text"
-                        autoComplete="username"
-                        required
                         value={signupUsername}
                         onChange={(e) => setSignupUsername(e.target.value)}
-                        className="w-full h-11 px-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                        className="h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                         placeholder="Username"
+                        required
                       />
                     </div>
                   </div>
 
-                  <div>
-                    <Label htmlFor="signup-email" className="block text-sm font-medium text-gray-700 mb-2">
-                      Email
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-email" className="text-sm font-medium text-gray-700">
+                      Email Address
                     </Label>
                     <Input
                       id="signup-email"
                       type="email"
-                      autoComplete="email"
-                      required
                       value={signupEmail}
                       onChange={(e) => setSignupEmail(e.target.value)}
-                      className="w-full h-11 px-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                      placeholder="Masukkan email Anda"
+                      className="h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                      placeholder="Enter your email"
+                      required
                     />
                   </div>
 
-                  <div>
-                    <Label htmlFor="signup-password" className="block text-sm font-medium text-gray-700 mb-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-password" className="text-sm font-medium text-gray-700">
                       Password
                     </Label>
                     <div className="relative">
                       <Input
                         id="signup-password"
                         type={showConfirmPassword ? "text" : "password"}
-                        autoComplete="new-password"
-                        required
                         value={signupPassword}
                         onChange={(e) => setSignupPassword(e.target.value)}
-                        className="w-full h-11 px-4 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                        placeholder="Masukkan password Anda"
+                        className="h-11 pr-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                        placeholder="Create a password"
+                        required
                       />
                       <button
                         type="button"
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                       >
                         {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
@@ -267,48 +253,45 @@ const Auth: React.FC = () => {
                   <Button
                     type="submit"
                     disabled={isLoading}
-                    className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full h-12 bg-blue-500 hover:bg-blue-600 text-white font-semibold text-base mt-6"
                   >
                     {isLoading ? (
                       <div className="flex items-center justify-center">
                         <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent mr-2"></div>
-                        Memproses...
+                        Creating account...
                       </div>
                     ) : (
-                      'Buat Akun'
+                      'Create Account'
                     )}
                   </Button>
 
-                  <p className="text-xs text-center text-gray-500">
-                    Dengan mendaftar, Anda menyetujui{' '}
-                    <a href="#" className="text-blue-600 hover:underline">
-                      Syarat & Ketentuan
-                    </a>
+                  <p className="text-xs text-center text-gray-500 mt-4">
+                    By signing up, you agree to our{' '}
+                    <a href="#" className="text-blue-500 hover:underline">Terms of Service</a>
                   </p>
                 </form>
               </TabsContent>
             </Tabs>
+
+            {/* Default Password Notice */}
+            <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+              <div className="flex items-start">
+                <AlertCircle className="w-5 h-5 text-amber-600 mr-3 mt-0.5 flex-shrink-0" />
+                <div>
+                  <h4 className="text-sm font-medium text-amber-800">Default Login</h4>
+                  <p className="text-sm text-amber-700 mt-1">
+                    Default teacher password: <code className="bg-amber-100 px-2 py-0.5 rounded text-xs font-mono">guru123456</code>
+                  </p>
+                </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
-        {/* Info Card */}
-        <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <div className="flex items-start gap-3">
-            <Info className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
-            <div>
-              <p className="text-sm font-medium text-blue-800">Informasi Login</p>
-              <p className="text-sm text-blue-700 mt-1">
-                Password default untuk guru: <code className="bg-blue-100 px-2 py-1 rounded font-mono text-xs">guru123456</code>
-              </p>
-            </div>
-          </div>
-        </div>
-
         {/* Footer */}
-        <div className="text-center mt-8">
+        <div className="text-center mt-6">
           <p className="text-sm text-gray-500">
-            © 2024 Bank Soal • Dibuat oleh{' '}
-            <span className="font-medium text-gray-700">Rudy Susanto</span>
+            © 2024 Bank Soal - Created by <span className="font-medium">Rudy Susanto</span>
           </p>
         </div>
       </div>
