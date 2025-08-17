@@ -101,8 +101,8 @@ const Auth: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
         {/* Logo and Title */}
         <div className="text-center">
           <div className="mx-auto h-12 w-12 flex items-center justify-center bg-blue-600 rounded-lg shadow-lg">
@@ -115,10 +115,9 @@ const Auth: React.FC = () => {
             Sistem Manajemen Soal Ujian
           </p>
         </div>
-      </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow-xl sm:rounded-lg sm:px-10 border border-gray-200">
+      <div className="mt-8">
+        <div className="bg-white py-8 px-6 shadow-xl rounded-lg border border-gray-200 w-full">
           {/* Error Alert */}
           {error && (
             <Alert className="mb-6 border-red-200 bg-red-50">
