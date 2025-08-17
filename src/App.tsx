@@ -20,7 +20,9 @@ import Pengumuman from "./pages/admin/Pengumuman";
 // Teacher pages
 import UploadSoal from "./pages/guru/UploadSoal";
 import RiwayatSoal from "./pages/guru/RiwayatSoal";
+
 const queryClient = new QueryClient();
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -36,7 +38,6 @@ const App = () => (
                   <Index />
                 </ProtectedRoute>
               } />
-
               {/* Admin Routes */}
               <Route path="/admin/guru" element={
                 <ProtectedRoute requireAdmin>
@@ -73,7 +74,6 @@ const App = () => (
                   <Pengumuman />
                 </ProtectedRoute>
               } />
-
               {/* Teacher Routes */}
               <Route path="/guru/upload" element={
                 <ProtectedRoute>
@@ -85,9 +85,8 @@ const App = () => (
                   <RiwayatSoal />
                 </ProtectedRoute>
               } />
-
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE /}
-              <Route path="" element={<NotFound />} />
+              {/* Catch-all route untuk halaman tidak ditemukan - harus paling terakhir */}
+              <Route path="*" element={<NotFound />} />
             </Routes>
           </SidebarProvider>
         </BrowserRouter>
@@ -95,4 +94,5 @@ const App = () => (
     </TooltipProvider>
   </QueryClientProvider>
 );
+
 export default App;
