@@ -385,7 +385,7 @@ const Auth: React.FC = () => {
           <div className="text-center mt-8">
             <p className="text-sm text-gray-500">
               © 2024 Bank Soal • Dibuat dengan ❤️ oleh{' '}
-              <span className="font-semibold text-gray-700">Rudy</span>
+              <span className="font-semibold text-gray-700">R</span>
             </p>
           </div>
         </div>
