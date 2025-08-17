@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,18 +13,17 @@ const Auth: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  
+
   // Login form state
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
-  
+
   // Signup form state
   const [signupEmail, setSignupEmail] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
   const [signupNama, setSignupNama] = useState('');
   const [signupUsername, setSignupUsername] = useState('');
 
-  // Redirect if already authenticated
   if (user) {
     return <Navigate to="/" replace />;
   }
@@ -40,59 +39,50 @@ const Auth: React.FC = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
     await signIn(loginEmail, loginPassword);
-    
     setIsLoading(false);
   };
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
     const { error } = await signUp(signupEmail, signupPassword, signupNama, signupUsername);
-    
     if (!error) {
-      // Clear form on successful signup
       setSignupEmail('');
       setSignupPassword('');
       setSignupNama('');
       setSignupUsername('');
     }
-    
     setIsLoading(false);
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
-      {/* Main Container - Perfect Center */}
-      <div className="w-full max-w-sm sm:max-w-md mx-auto">
+      {/* Main Container - Centered */}
+      <div className="w-full max-w-md md:max-w-lg lg:max-w-xl mx-auto">
         
         {/* Login Card */}
-        <Card className="bg-white/95 backdrop-blur-sm shadow-lg border border-gray-200/50 rounded-2xl overflow-hidden">
+        <Card className="bg-white/95 backdrop-blur-sm shadow-xl border border-gray-200/50 rounded-2xl overflow-hidden">
           
           {/* Header Section */}
-          <CardHeader className="text-center px-6 py-8 bg-gradient-to-b from-white to-gray-50/50">
-            {/* Logo */}
-            <div className="mx-auto w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-lg mb-4">
-              <BookOpen className="w-8 h-8 text-white" />
+          <CardHeader className="text-center px-8 py-10 bg-gradient-to-b from-white to-gray-50/50">
+            <div className="mx-auto w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-lg mb-5">
+              <BookOpen className="w-10 h-10 text-white" />
             </div>
-            
-            {/* Title */}
-            <CardTitle className="text-2xl font-bold text-gray-900 mb-2">
+            <CardTitle className="text-3xl font-bold text-gray-900 mb-2">
               Bank Soal
             </CardTitle>
-            <CardDescription className="text-gray-600">
+            <CardDescription className="text-gray-600 text-base">
               Sistem Manajemen Soal Ujian
             </CardDescription>
           </CardHeader>
 
           {/* Form Content */}
-          <CardContent className="px-6 py-6">
+          <CardContent className="px-8 py-8">
             <Tabs defaultValue="login" className="w-full">
               
               {/* Tab Navigation */}
-              <TabsList className="grid w-full grid-cols-2 mb-6 bg-gray-100/80 p-1 h-11 rounded-xl">
+              <TabsList className="grid w-full grid-cols-2 mb-8 bg-gray-100/80 p-1 h-12 rounded-xl">
                 <TabsTrigger 
                   value="login"
                   className="data-[state=active]:bg-white data-[state=active]:shadow-sm text-sm font-medium rounded-lg transition-all"
@@ -110,10 +100,8 @@ const Auth: React.FC = () => {
               </TabsList>
 
               {/* Login Form */}
-              <TabsContent value="login" className="space-y-5">
-                <form onSubmit={handleLogin} className="space-y-5">
-                  
-                  {/* Email Field */}
+              <TabsContent value="login" className="space-y-6">
+                <form onSubmit={handleLogin} className="space-y-6">
                   <div className="space-y-2">
                     <Label htmlFor="login-email" className="text-sm font-medium text-gray-700">
                       Email
@@ -130,7 +118,6 @@ const Auth: React.FC = () => {
                     />
                   </div>
 
-                  {/* Password Field */}
                   <div className="space-y-2">
                     <Label htmlFor="login-password" className="text-sm font-medium text-gray-700">
                       Password
@@ -156,13 +143,9 @@ const Auth: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Remember Me & Forgot Password */}
                   <div className="flex items-center justify-between">
                     <label className="flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        className="w-4 h-4 text-blue-500 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
-                      />
+                      <input type="checkbox" className="w-4 h-4 text-blue-500 border-gray-300 rounded focus:ring-blue-500 focus:ring-2" />
                       <span className="ml-2 text-sm text-gray-600">Ingat saya</span>
                     </label>
                     <a href="#" className="text-sm text-blue-500 hover:text-blue-600 font-medium transition-colors">
@@ -170,7 +153,6 @@ const Auth: React.FC = () => {
                     </a>
                   </div>
 
-                  {/* Login Button */}
                   <Button
                     type="submit"
                     disabled={isLoading}
@@ -189,10 +171,8 @@ const Auth: React.FC = () => {
               </TabsContent>
 
               {/* Signup Form */}
-              <TabsContent value="signup" className="space-y-4">
-                <form onSubmit={handleSignup} className="space-y-4">
-                  
-                  {/* Name & Username Row */}
+              <TabsContent value="signup" className="space-y-5">
+                <form onSubmit={handleSignup} className="space-y-5">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="signup-nama" className="text-sm font-medium text-gray-700">
@@ -226,7 +206,6 @@ const Auth: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Email Field */}
                   <div className="space-y-2">
                     <Label htmlFor="signup-email" className="text-sm font-medium text-gray-700">
                       Email
@@ -243,7 +222,6 @@ const Auth: React.FC = () => {
                     />
                   </div>
 
-                  {/* Password Field */}
                   <div className="space-y-2">
                     <Label htmlFor="signup-password" className="text-sm font-medium text-gray-700">
                       Password
@@ -269,11 +247,10 @@ const Auth: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Signup Button */}
                   <Button
                     type="submit"
                     disabled={isLoading}
-                    className="w-full h-12 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-50 mt-6"
+                    className="w-full h-12 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-50 mt-4"
                   >
                     {isLoading ? (
                       <div className="flex items-center justify-center">
@@ -285,8 +262,7 @@ const Auth: React.FC = () => {
                     )}
                   </Button>
 
-                  {/* Terms */}
-                  <p className="text-xs text-center text-gray-500 mt-4">
+                  <p className="text-xs text-center text-gray-500 mt-3">
                     Dengan mendaftar, Anda menyetujui{' '}
                     <a href="#" className="text-blue-500 hover:text-blue-600 underline">
                       Syarat & Ketentuan
