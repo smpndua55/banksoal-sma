@@ -49,7 +49,9 @@ const Auth: React.FC = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
-      <div className="w-full max-w-lg bg-white rounded-2xl shadow-lg p-8 md:p-10">
+      {/* Card Login */}
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-8">
+        
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
           <div className="w-16 h-16 flex items-center justify-center bg-blue-600 text-white rounded-full shadow">
