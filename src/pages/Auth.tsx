@@ -101,10 +101,10 @@ const Auth: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col justify-center items-center py-12 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4 sm:p-6">
       <div className="w-full max-w-md">
         {/* Logo and Title */}
-        <div className="text-center">
+        <div className="text-center mb-8">
           <div className="mx-auto h-16 w-16 flex items-center justify-center bg-blue-600 rounded-lg shadow-lg">
             <BookOpen className="h-8 w-8 text-white" />
           </div>
@@ -115,13 +115,11 @@ const Auth: React.FC = () => {
             Sistem Manajemen Soal Ujian
           </p>
         </div>
-      </div>
 
-      <div className="mt-8 w-full max-w-md px-4 sm:px-0">
-        <div className="bg-white py-8 px-6 shadow-xl rounded-lg border border-gray-200">
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
           {/* Error Alert */}
           {error && (
-            <Alert variant="destructive" className="mb-6">
+            <Alert variant="destructive" className="rounded-none rounded-t-lg">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
                 {error}
@@ -131,7 +129,7 @@ const Auth: React.FC = () => {
 
           {/* Success Alert */}
           {successMessage && (
-            <Alert className="mb-6 bg-green-50 border-green-200">
+            <Alert className="rounded-none rounded-t-lg bg-green-50 border-green-200">
               <AlertCircle className="h-4 w-4 text-green-600" />
               <AlertDescription className="text-green-700">
                 {successMessage}
@@ -139,7 +137,7 @@ const Auth: React.FC = () => {
             </Alert>
           )}
 
-          <Tabs defaultValue="login" className="w-full" onValueChange={clearMessages}>
+          <Tabs defaultValue="login" className="w-full p-6" onValueChange={clearMessages}>
             {/* Tab Headers */}
             <TabsList className="grid w-full grid-cols-2 mb-6 bg-gray-100 p-1 rounded-lg">
               <TabsTrigger 
@@ -160,7 +158,7 @@ const Auth: React.FC = () => {
             <TabsContent value="login" className="space-y-4">
               <form onSubmit={handleLogin} className="space-y-4">
                 <div>
-                  <Label htmlFor="login-email" className="mb-1 block">
+                  <Label htmlFor="login-email" className="mb-2 block">
                     Email
                   </Label>
                   <Input
@@ -177,7 +175,7 @@ const Auth: React.FC = () => {
                 </div>
 
                 <div>
-                  <Label htmlFor="login-password" className="mb-1 block">
+                  <Label htmlFor="login-password" className="mb-2 block">
                     Password
                   </Label>
                   <div className="relative">
@@ -250,7 +248,7 @@ const Auth: React.FC = () => {
               <form onSubmit={handleSignup} className="space-y-4">
                 <div className="grid grid-cols-1 gap-4">
                   <div>
-                    <Label htmlFor="signup-nama" className="mb-1 block">
+                    <Label htmlFor="signup-nama" className="mb-2 block">
                       Nama Lengkap
                     </Label>
                     <Input
@@ -266,7 +264,7 @@ const Auth: React.FC = () => {
                   </div>
 
                   <div>
-                    <Label htmlFor="signup-username" className="mb-1 block">
+                    <Label htmlFor="signup-username" className="mb-2 block">
                       Username
                     </Label>
                     <Input
@@ -283,7 +281,7 @@ const Auth: React.FC = () => {
                 </div>
 
                 <div>
-                  <Label htmlFor="signup-email" className="mb-1 block">
+                  <Label htmlFor="signup-email" className="mb-2 block">
                     Email
                   </Label>
                   <Input
@@ -299,7 +297,7 @@ const Auth: React.FC = () => {
                 </div>
 
                 <div>
-                  <Label htmlFor="signup-password" className="mb-1 block">
+                  <Label htmlFor="signup-password" className="mb-2 block">
                     Password
                   </Label>
                   <div className="relative">
@@ -330,7 +328,7 @@ const Auth: React.FC = () => {
                 </div>
 
                 <div>
-                  <Label htmlFor="confirm-password" className="mb-1 block">
+                  <Label htmlFor="confirm-password" className="mb-2 block">
                     Konfirmasi Password
                   </Label>
                   <div className="relative">
@@ -392,7 +390,7 @@ const Auth: React.FC = () => {
           </Tabs>
 
           {/* Default Password Info */}
-          <div className="mt-6 p-3 bg-blue-50 border border-blue-200 rounded-md">
+          <div className="bg-blue-50 border-t border-blue-200 p-4">
             <div className="flex items-start">
               <div className="flex-shrink-0 mt-1">
                 <div className="h-2 w-2 bg-blue-400 rounded-full"></div>
