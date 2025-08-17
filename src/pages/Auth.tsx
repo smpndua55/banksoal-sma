@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/useAuth';
-import { BookOpen, LogIn, UserPlus, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { BookOpen, LogIn, UserPlus, Eye, EyeOff, Info } from 'lucide-react';
 
 const Auth: React.FC = () => {
   const { user, signIn, signUp, loading } = useAuth();
@@ -31,8 +31,8 @@ const Auth: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-100">
-        <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
+        <div className="animate-spin rounded-full h-10 w-10 border-3 border-blue-500 border-t-transparent"></div>
       </div>
     );
   }
@@ -64,65 +64,73 @@ const Auth: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <Card className="bg-white shadow-xl border-0">
-          {/* Header dengan Logo */}
-          <CardHeader className="text-center space-y-4 pb-6">
-            <div className="flex justify-center">
-              <div className="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center">
-                <BookOpen className="w-8 h-8 text-white" />
-              </div>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
+      {/* Main Container - Perfect Center */}
+      <div className="w-full max-w-sm sm:max-w-md mx-auto">
+        
+        {/* Login Card */}
+        <Card className="bg-white/95 backdrop-blur-sm shadow-lg border border-gray-200/50 rounded-2xl overflow-hidden">
+          
+          {/* Header Section */}
+          <CardHeader className="text-center px-6 py-8 bg-gradient-to-b from-white to-gray-50/50">
+            {/* Logo */}
+            <div className="mx-auto w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-lg mb-4">
+              <BookOpen className="w-8 h-8 text-white" />
             </div>
-            <div>
-              <CardTitle className="text-2xl font-bold text-gray-900">
-                Bank Soal
-              </CardTitle>
-              <CardDescription className="text-gray-600 text-base">
-                Sistem Manajemen Soal Ujian
-              </CardDescription>
-            </div>
+            
+            {/* Title */}
+            <CardTitle className="text-2xl font-bold text-gray-900 mb-2">
+              Bank Soal
+            </CardTitle>
+            <CardDescription className="text-gray-600">
+              Sistem Manajemen Soal Ujian
+            </CardDescription>
           </CardHeader>
 
           {/* Form Content */}
-          <CardContent className="px-6 pb-8">
+          <CardContent className="px-6 py-6">
             <Tabs defaultValue="login" className="w-full">
+              
               {/* Tab Navigation */}
-              <TabsList className="grid w-full grid-cols-2 mb-8 bg-gray-100 h-12">
+              <TabsList className="grid w-full grid-cols-2 mb-6 bg-gray-100/80 p-1 h-11 rounded-xl">
                 <TabsTrigger 
                   value="login"
-                  className="data-[state=active]:bg-white data-[state=active]:shadow-sm font-medium"
+                  className="data-[state=active]:bg-white data-[state=active]:shadow-sm text-sm font-medium rounded-lg transition-all"
                 >
                   <LogIn className="w-4 h-4 mr-2" />
-                  Login
+                  Masuk
                 </TabsTrigger>
                 <TabsTrigger 
                   value="signup"
-                  className="data-[state=active]:bg-white data-[state=active]:shadow-sm font-medium"
+                  className="data-[state=active]:bg-white data-[state=active]:shadow-sm text-sm font-medium rounded-lg transition-all"
                 >
                   <UserPlus className="w-4 h-4 mr-2" />
-                  Register
+                  Daftar
                 </TabsTrigger>
               </TabsList>
 
-              {/* Login Tab */}
-              <TabsContent value="login" className="space-y-0">
+              {/* Login Form */}
+              <TabsContent value="login" className="space-y-5">
                 <form onSubmit={handleLogin} className="space-y-5">
+                  
+                  {/* Email Field */}
                   <div className="space-y-2">
                     <Label htmlFor="login-email" className="text-sm font-medium text-gray-700">
-                      Email Address
+                      Email
                     </Label>
                     <Input
                       id="login-email"
                       type="email"
                       value={loginEmail}
                       onChange={(e) => setLoginEmail(e.target.value)}
-                      className="h-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                      placeholder="Enter your email"
+                      className="h-12 px-4 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 rounded-lg transition-all"
+                      placeholder="Masukkan email Anda"
+                      autoComplete="email"
                       required
                     />
                   </div>
 
+                  {/* Password Field */}
                   <div className="space-y-2">
                     <Label htmlFor="login-password" className="text-sm font-medium text-gray-700">
                       Password
@@ -133,65 +141,71 @@ const Auth: React.FC = () => {
                         type={showPassword ? "text" : "password"}
                         value={loginPassword}
                         onChange={(e) => setLoginPassword(e.target.value)}
-                        className="h-12 pr-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                        placeholder="Enter your password"
+                        className="h-12 px-4 pr-12 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 rounded-lg transition-all"
+                        placeholder="Masukkan password Anda"
+                        autoComplete="current-password"
                         required
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
                       >
                         {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                       </button>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between pt-2">
-                    <label className="flex items-center">
+                  {/* Remember Me & Forgot Password */}
+                  <div className="flex items-center justify-between">
+                    <label className="flex items-center cursor-pointer">
                       <input
                         type="checkbox"
-                        className="w-4 h-4 text-blue-500 border-gray-300 rounded focus:ring-blue-500"
+                        className="w-4 h-4 text-blue-500 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
                       />
-                      <span className="ml-2 text-sm text-gray-600">Remember me</span>
+                      <span className="ml-2 text-sm text-gray-600">Ingat saya</span>
                     </label>
-                    <a href="#" className="text-sm text-blue-500 hover:text-blue-600 font-medium">
-                      Forgot password?
+                    <a href="#" className="text-sm text-blue-500 hover:text-blue-600 font-medium transition-colors">
+                      Lupa password?
                     </a>
                   </div>
 
+                  {/* Login Button */}
                   <Button
                     type="submit"
                     disabled={isLoading}
-                    className="w-full h-12 bg-blue-500 hover:bg-blue-600 text-white font-semibold text-base mt-6"
+                    className="w-full h-12 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-50"
                   >
                     {isLoading ? (
                       <div className="flex items-center justify-center">
                         <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent mr-2"></div>
-                        Signing in...
+                        Memproses...
                       </div>
                     ) : (
-                      'Sign In'
+                      'Masuk ke Sistem'
                     )}
                   </Button>
                 </form>
               </TabsContent>
 
-              {/* Register Tab */}
-              <TabsContent value="signup" className="space-y-0">
+              {/* Signup Form */}
+              <TabsContent value="signup" className="space-y-4">
                 <form onSubmit={handleSignup} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                  
+                  {/* Name & Username Row */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="signup-nama" className="text-sm font-medium text-gray-700">
-                        Full Name
+                        Nama Lengkap
                       </Label>
                       <Input
                         id="signup-nama"
                         type="text"
                         value={signupNama}
                         onChange={(e) => setSignupNama(e.target.value)}
-                        className="h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                        placeholder="Full name"
+                        className="h-11 px-4 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 rounded-lg transition-all"
+                        placeholder="Nama lengkap"
+                        autoComplete="name"
                         required
                       />
                     </div>
@@ -204,28 +218,32 @@ const Auth: React.FC = () => {
                         type="text"
                         value={signupUsername}
                         onChange={(e) => setSignupUsername(e.target.value)}
-                        className="h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                        className="h-11 px-4 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 rounded-lg transition-all"
                         placeholder="Username"
+                        autoComplete="username"
                         required
                       />
                     </div>
                   </div>
 
+                  {/* Email Field */}
                   <div className="space-y-2">
                     <Label htmlFor="signup-email" className="text-sm font-medium text-gray-700">
-                      Email Address
+                      Email
                     </Label>
                     <Input
                       id="signup-email"
                       type="email"
                       value={signupEmail}
                       onChange={(e) => setSignupEmail(e.target.value)}
-                      className="h-11 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                      placeholder="Enter your email"
+                      className="h-11 px-4 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 rounded-lg transition-all"
+                      placeholder="Masukkan email Anda"
+                      autoComplete="email"
                       required
                     />
                   </div>
 
+                  {/* Password Field */}
                   <div className="space-y-2">
                     <Label htmlFor="signup-password" className="text-sm font-medium text-gray-700">
                       Password
@@ -236,62 +254,70 @@ const Auth: React.FC = () => {
                         type={showConfirmPassword ? "text" : "password"}
                         value={signupPassword}
                         onChange={(e) => setSignupPassword(e.target.value)}
-                        className="h-11 pr-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                        placeholder="Create a password"
+                        className="h-11 px-4 pr-12 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 rounded-lg transition-all"
+                        placeholder="Buat password Anda"
+                        autoComplete="new-password"
                         required
                       />
                       <button
                         type="button"
                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
                       >
                         {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
                   </div>
 
+                  {/* Signup Button */}
                   <Button
                     type="submit"
                     disabled={isLoading}
-                    className="w-full h-12 bg-blue-500 hover:bg-blue-600 text-white font-semibold text-base mt-6"
+                    className="w-full h-12 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-50 mt-6"
                   >
                     {isLoading ? (
                       <div className="flex items-center justify-center">
                         <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent mr-2"></div>
-                        Creating account...
+                        Membuat akun...
                       </div>
                     ) : (
-                      'Create Account'
+                      'Buat Akun'
                     )}
                   </Button>
 
+                  {/* Terms */}
                   <p className="text-xs text-center text-gray-500 mt-4">
-                    By signing up, you agree to our{' '}
-                    <a href="#" className="text-blue-500 hover:underline">Terms of Service</a>
+                    Dengan mendaftar, Anda menyetujui{' '}
+                    <a href="#" className="text-blue-500 hover:text-blue-600 underline">
+                      Syarat & Ketentuan
+                    </a>
                   </p>
                 </form>
               </TabsContent>
             </Tabs>
-
-            {/* Default Password Notice */}
-            <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-              <div className="flex items-start">
-                <AlertCircle className="w-5 h-5 text-amber-600 mr-3 mt-0.5 flex-shrink-0" />
-                <div>
-                  <h4 className="text-sm font-medium text-amber-800">Default Login</h4>
-                  <p className="text-sm text-amber-700 mt-1">
-                    Default teacher password: <code className="bg-amber-100 px-2 py-0.5 rounded text-xs font-mono">guru123456</code>
-                  </p>
-                </div>
-              </div>
-            </div>
           </CardContent>
         </Card>
+
+        {/* Info Section */}
+        <div className="mt-6 bg-blue-50/80 backdrop-blur-sm border border-blue-200/50 rounded-xl p-4 shadow-sm">
+          <div className="flex items-start space-x-3">
+            <div className="flex-shrink-0">
+              <Info className="w-5 h-5 text-blue-600 mt-0.5" />
+            </div>
+            <div>
+              <h4 className="text-sm font-medium text-blue-900">Info Login</h4>
+              <p className="text-sm text-blue-700 mt-1">
+                Password default guru: <code className="bg-blue-100 px-2 py-0.5 rounded text-xs font-mono">guru123456</code>
+              </p>
+            </div>
+          </div>
+        </div>
 
         {/* Footer */}
         <div className="text-center mt-6">
           <p className="text-sm text-gray-500">
-            © 2024 Bank Soal - Created by <span className="font-medium">Rudy Susanto</span>
+            © 2024 Bank Soal • Dibuat oleh{' '}
+            <span className="font-medium text-gray-700">Rudy Susanto</span>
           </p>
         </div>
       </div>
