@@ -21,7 +21,8 @@ interface SoalUpload {
   guru: { nama: string };
   tahun_ajaran: { nama: string };
   mapel: { nama: string };
-  kelas: { nama: string };
+  kelas_ids: string[];
+  kelas_names?: string[];
   jenis_ujian: { nama: string };
 }
 
@@ -97,7 +98,6 @@ const DaftarSoal = () => {
           guru:profiles(nama),
           tahun_ajaran(nama),
           mapel(nama),
-          kelas(nama),
           jenis_ujian(nama)
         `, { count: 'exact' });
 
@@ -114,7 +114,7 @@ const DaftarSoal = () => {
         query = query.eq('mapel_id', filters.mapel_id);
       }
       if (filters.kelas_id && filters.kelas_id !== 'all') {
-        query = query.eq('kelas_id', filters.kelas_id);
+        query = query.contains('kelas_ids', [filters.kelas_id]);
       }
       if (filters.jenis_ujian_id && filters.jenis_ujian_id !== 'all') {
         query = query.eq('jenis_ujian_id', filters.jenis_ujian_id);
@@ -133,7 +133,24 @@ const DaftarSoal = () => {
 
       if (error) throw error;
 
-      setSoalUploads(data || []);
+      // Fetch kelas names for display
+      const dataWithKelasNames = await Promise.all(
+        (data || []).map(async (item) => {
+          if (item.kelas_ids && item.kelas_ids.length > 0) {
+            const { data: kelasData } = await supabase
+              .from('kelas')
+              .select('nama')
+              .in('id', item.kelas_ids);
+            return {
+              ...item,
+              kelas_names: kelasData?.map(k => k.nama) || []
+            };
+          }
+          return { ...item, kelas_names: [] };
+        })
+      );
+
+      setSoalUploads(dataWithKelasNames);
       setTotalCount(count || 0);
       setTotalPages(Math.ceil((count || 0) / itemsPerPage));
     } catch (error) {
@@ -457,9 +474,13 @@ const DaftarSoal = () => {
                               </Badge>
                             </TableCell>
                             <TableCell>
-                              <Badge variant="outline">
-                                {item.kelas?.nama}
-                              </Badge>
+                              <div className="flex flex-wrap gap-1">
+                                {item.kelas_names?.map((namaKelas, index) => (
+                                  <Badge key={index} variant="outline">
+                                    {namaKelas}
+                                  </Badge>
+                                ))}
+                              </div>
                             </TableCell>
                             <TableCell>
                               <Badge variant="outline">

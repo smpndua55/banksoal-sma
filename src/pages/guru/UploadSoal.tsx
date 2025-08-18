@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
@@ -26,7 +27,7 @@ const UploadSoal = () => {
   const [formData, setFormData] = useState({
     tahun_ajaran_id: '',
     mapel_id: '',
-    kelas_id: '',
+    kelas_ids: [] as string[],
     jenis_ujian_id: '',
     file: null as File | null
   });
@@ -99,14 +100,28 @@ const UploadSoal = () => {
     }
   };
 
+  const handleKelasChange = (kelasId: string, checked: boolean) => {
+    if (checked) {
+      setFormData({ 
+        ...formData, 
+        kelas_ids: [...formData.kelas_ids, kelasId] 
+      });
+    } else {
+      setFormData({ 
+        ...formData, 
+        kelas_ids: formData.kelas_ids.filter(id => id !== kelasId) 
+      });
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.file || !user) {
+    if (!formData.file || !user || formData.kelas_ids.length === 0) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Pilih file yang akan diupload",
+        description: "Pilih file dan minimal satu kelas yang akan diupload",
       });
       return;
     }
@@ -138,7 +153,7 @@ const UploadSoal = () => {
           guru_id: user.id,
           tahun_ajaran_id: formData.tahun_ajaran_id,
           mapel_id: formData.mapel_id,
-          kelas_id: formData.kelas_id,
+          kelas_ids: formData.kelas_ids,
           jenis_ujian_id: formData.jenis_ujian_id,
           file_name: formData.file.name,
           file_url: publicUrl,
@@ -156,7 +171,7 @@ const UploadSoal = () => {
       setFormData({
         tahun_ajaran_id: '',
         mapel_id: '',
-        kelas_id: '',
+        kelas_ids: [],
         jenis_ujian_id: '',
         file: null
       });
@@ -253,24 +268,30 @@ const UploadSoal = () => {
                     </Select>
                   </div>
 
-                  <div>
-                    <Label htmlFor="kelas_id">Kelas</Label>
-                    <Select
-                      value={formData.kelas_id}
-                      onValueChange={(value) => setFormData({ ...formData, kelas_id: value })}
-                      required
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Pilih kelas" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {kelas.map((item) => (
-                          <SelectItem key={item.id} value={item.id}>
+                  <div className="md:col-span-2">
+                    <Label>Kelas (Pilih minimal 1)</Label>
+                    <div className="mt-2 space-y-2 max-h-32 overflow-y-auto border rounded-md p-3">
+                      {kelas.map((item) => (
+                        <div key={item.id} className="flex items-center space-x-2">
+                          <Checkbox 
+                            id={`kelas-${item.id}`}
+                            checked={formData.kelas_ids.includes(item.id)}
+                            onCheckedChange={(checked) => handleKelasChange(item.id, !!checked)}
+                          />
+                          <Label 
+                            htmlFor={`kelas-${item.id}`} 
+                            className="text-sm font-normal cursor-pointer"
+                          >
                             {item.nama}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                    {formData.kelas_ids.length > 0 && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {formData.kelas_ids.length} kelas dipilih
+                      </p>
+                    )}
                   </div>
 
                   <div>

@@ -136,7 +136,7 @@ export type Database = {
           guru_id: string
           id: string
           jenis_ujian_id: string
-          kelas_id: string
+          kelas_ids: string[]
           mapel_id: string
           tahun_ajaran_id: string
           uploaded_at: string
@@ -148,7 +148,7 @@ export type Database = {
           guru_id: string
           id?: string
           jenis_ujian_id: string
-          kelas_id: string
+          kelas_ids?: string[]
           mapel_id: string
           tahun_ajaran_id: string
           uploaded_at?: string
@@ -160,7 +160,7 @@ export type Database = {
           guru_id?: string
           id?: string
           jenis_ujian_id?: string
-          kelas_id?: string
+          kelas_ids?: string[]
           mapel_id?: string
           tahun_ajaran_id?: string
           uploaded_at?: string
@@ -178,13 +178,6 @@ export type Database = {
             columns: ["jenis_ujian_id"]
             isOneToOne: false
             referencedRelation: "jenis_ujian"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "soal_uploads_kelas_id_fkey"
-            columns: ["kelas_id"]
-            isOneToOne: false
-            referencedRelation: "kelas"
             referencedColumns: ["id"]
           },
           {

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -22,11 +23,11 @@ interface SoalUpload {
   uploaded_at: string;
   tahun_ajaran_id: string;
   mapel_id: string;
-  kelas_id: string;
+  kelas_ids: string[];
+  kelas_names?: string[];
   jenis_ujian_id: string;
   tahun_ajaran: { nama: string };
   mapel: { nama: string };
-  kelas: { nama: string };
   jenis_ujian: { nama: string };
 }
 
@@ -50,7 +51,7 @@ const RiwayatSoal = () => {
   const [editFormData, setEditFormData] = useState({
     tahun_ajaran_id: '',
     mapel_id: '',
-    kelas_id: '',
+    kelas_ids: [] as string[],
     jenis_ujian_id: '',
     file: null as File | null,
     replaceFile: false
@@ -94,14 +95,31 @@ const RiwayatSoal = () => {
           *,
           tahun_ajaran:tahun_ajaran_id(nama),
           mapel:mapel_id(nama),
-          kelas:kelas_id(nama),
           jenis_ujian:jenis_ujian_id(nama)
         `)
         .eq('guru_id', user.id)
         .order('uploaded_at', { ascending: false });
 
       if (error) throw error;
-      setSoalUploads(data || []);
+
+      // Fetch kelas names for display
+      const dataWithKelasNames = await Promise.all(
+        (data || []).map(async (item) => {
+          if (item.kelas_ids && item.kelas_ids.length > 0) {
+            const { data: kelasData } = await supabase
+              .from('kelas')
+              .select('nama')
+              .in('id', item.kelas_ids);
+            return {
+              ...item,
+              kelas_names: kelasData?.map(k => k.nama) || []
+            };
+          }
+          return { ...item, kelas_names: [] };
+        })
+      );
+
+      setSoalUploads(dataWithKelasNames);
     } catch (error) {
       console.error('Error fetching soal uploads:', error);
       toast({
@@ -119,7 +137,7 @@ const RiwayatSoal = () => {
     setEditFormData({
       tahun_ajaran_id: soal.tahun_ajaran_id,
       mapel_id: soal.mapel_id,
-      kelas_id: soal.kelas_id,
+      kelas_ids: soal.kelas_ids,
       jenis_ujian_id: soal.jenis_ujian_id,
       file: null,
       replaceFile: false
@@ -160,6 +178,20 @@ const RiwayatSoal = () => {
       }
 
       setEditFormData({ ...editFormData, file, replaceFile: true });
+    }
+  };
+
+  const handleEditKelasChange = (kelasId: string, checked: boolean) => {
+    if (checked) {
+      setEditFormData({ 
+        ...editFormData, 
+        kelas_ids: [...editFormData.kelas_ids, kelasId] 
+      });
+    } else {
+      setEditFormData({ 
+        ...editFormData, 
+        kelas_ids: editFormData.kelas_ids.filter(id => id !== kelasId) 
+      });
     }
   };
 
@@ -212,7 +244,7 @@ const RiwayatSoal = () => {
         .update({
           tahun_ajaran_id: editFormData.tahun_ajaran_id,
           mapel_id: editFormData.mapel_id,
-          kelas_id: editFormData.kelas_id,
+          kelas_ids: editFormData.kelas_ids,
           jenis_ujian_id: editFormData.jenis_ujian_id,
           file_url: fileUrl,
           file_name: fileName,
@@ -382,9 +414,13 @@ const RiwayatSoal = () => {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline">
-                            {item.kelas?.nama}
-                          </Badge>
+                          <div className="flex flex-wrap gap-1">
+                            {item.kelas_names?.map((namaKelas, index) => (
+                              <Badge key={index} variant="outline">
+                                {namaKelas}
+                              </Badge>
+                            ))}
+                          </div>
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline">
@@ -497,24 +533,30 @@ const RiwayatSoal = () => {
                   </Select>
                 </div>
 
-                <div>
-                  <Label htmlFor="edit_kelas_id">Kelas</Label>
-                  <Select
-                    value={editFormData.kelas_id}
-                    onValueChange={(value) => setEditFormData({ ...editFormData, kelas_id: value })}
-                    required
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Pilih kelas" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {kelas.map((item) => (
-                        <SelectItem key={item.id} value={item.id}>
+                <div className="md:col-span-2">
+                  <Label>Kelas (Pilih minimal 1)</Label>
+                  <div className="mt-2 space-y-2 max-h-32 overflow-y-auto border rounded-md p-3">
+                    {kelas.map((item) => (
+                      <div key={item.id} className="flex items-center space-x-2">
+                        <Checkbox 
+                          id={`edit-kelas-${item.id}`}
+                          checked={editFormData.kelas_ids.includes(item.id)}
+                          onCheckedChange={(checked) => handleEditKelasChange(item.id, !!checked)}
+                        />
+                        <Label 
+                          htmlFor={`edit-kelas-${item.id}`} 
+                          className="text-sm font-normal cursor-pointer"
+                        >
                           {item.nama}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                  {editFormData.kelas_ids.length > 0 && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {editFormData.kelas_ids.length} kelas dipilih
+                    </p>
+                  )}
                 </div>
 
                 <div>
