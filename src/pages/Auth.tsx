@@ -101,8 +101,8 @@ const Auth: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden">
+    <div className="min-h-screen w-full bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-0">
+      <div className="w-full max-w-2xl bg-white rounded-none lg:rounded-2xl shadow-none lg:shadow-xl overflow-hidden mx-auto">
         <div className="p-8">
           <div className="text-center mb-8">
             <div className="mx-auto mb-4 flex justify-center">
