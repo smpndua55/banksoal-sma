@@ -5,14 +5,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
+import RichTextEditor from '@/components/ui/rich-text-editor';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Edit, Trash2, Megaphone } from 'lucide-react';
+import { Plus, Edit, Trash2, Megaphone, Code } from 'lucide-react';
 
 interface Pengumuman {
   id: string;
@@ -244,13 +246,32 @@ const Pengumuman = () => {
                       </div>
                       <div>
                         <Label htmlFor="isi">Isi Pengumuman</Label>
-                        <Textarea
-                          id="isi"
-                          rows={5}
-                          value={formData.isi}
-                          onChange={(e) => setFormData({ ...formData, isi: e.target.value })}
-                          required
-                        />
+                        <Tabs defaultValue="editor" className="w-full mt-2">
+                          <TabsList className="grid w-full grid-cols-2">
+                            <TabsTrigger value="editor">Rich Editor</TabsTrigger>
+                            <TabsTrigger value="html">
+                              <Code className="h-4 w-4 mr-2" />
+                              HTML
+                            </TabsTrigger>
+                          </TabsList>
+                          <TabsContent value="editor" className="mt-4">
+                            <RichTextEditor
+                              value={formData.isi}
+                              onChange={(value) => setFormData({ ...formData, isi: value })}
+                              placeholder="Masukkan isi pengumuman..."
+                            />
+                          </TabsContent>
+                          <TabsContent value="html" className="mt-4">
+                            <Textarea
+                              id="isi"
+                              rows={8}
+                              value={formData.isi}
+                              onChange={(e) => setFormData({ ...formData, isi: e.target.value })}
+                              placeholder="Masukkan HTML untuk isi pengumuman..."
+                              className="font-mono text-sm"
+                            />
+                          </TabsContent>
+                        </Tabs>
                       </div>
                       <div>
                         <Label htmlFor="tanggal">Tanggal</Label>
@@ -296,9 +317,14 @@ const Pengumuman = () => {
                       <TableCell>
                         <div>
                           <div className="font-medium">{item.judul}</div>
-                          <div className="text-sm text-muted-foreground truncate max-w-xs">
-                            {item.isi}
-                          </div>
+                          <div 
+                            className="text-sm text-muted-foreground max-w-xs overflow-hidden"
+                            dangerouslySetInnerHTML={{ 
+                              __html: item.isi.length > 100 
+                                ? item.isi.substring(0, 100) + '...' 
+                                : item.isi 
+                            }}
+                          />
                         </div>
                       </TableCell>
                       <TableCell>

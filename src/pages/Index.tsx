@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { AppSidebar } from '@/components/AppSidebar';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import AnnouncementCard from '@/components/AnnouncementCard';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Info, BookOpen, Users, Upload, FileText } from 'lucide-react';
 
 interface Pengumuman {
@@ -178,32 +178,25 @@ const Index = () => {
           {isAdmin ? <AdminDashboard /> : <GuruDashboard />}
 
           {pengumuman.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
                   <Info className="h-5 w-5" />
                   Pengumuman Terbaru
-                </CardTitle>
-                <CardDescription>
-                  Informasi penting untuk {isAdmin ? 'admin' : 'guru'}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {pengumuman.map((item) => (
-                  <Alert key={item.id}>
-                    <AlertDescription>
-                      <div className="space-y-1">
-                        <h4 className="font-semibold">{item.judul}</h4>
-                        <p className="text-sm">{item.isi}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {new Date(item.tanggal).toLocaleDateString('id-ID')}
-                        </p>
-                      </div>
-                    </AlertDescription>
-                  </Alert>
-                ))}
-              </CardContent>
-            </Card>
+                </h3>
+                <div className="space-y-4">
+                  {pengumuman.map((item) => (
+                    <AnnouncementCard
+                      key={item.id}
+                      title={item.judul}
+                      content={item.isi}
+                      date={item.tanggal}
+                      isActive={item.is_active}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
           )}
         </div>
       </main>
