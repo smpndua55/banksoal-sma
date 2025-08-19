@@ -280,22 +280,40 @@ const RiwayatSoal = () => {
 
   const handleDownload = async (fileUrl: string, fileName: string) => {
     try {
-      const response = await fetch(fileUrl);
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
+      // Extract file path from URL for Supabase storage
+      const urlParts = fileUrl.split('/');
+      const filePath = urlParts.slice(-3).join('/'); // Get soal/user_id/filename
+      
+      // Use Supabase storage to download the file properly
+      const { data, error } = await supabase.storage
+        .from('soal-files')
+        .download(filePath);
+
+      if (error) {
+        throw error;
+      }
+
+      // Create blob URL and download
+      const url = window.URL.createObjectURL(data);
       const a = document.createElement('a');
       a.style.display = 'none';
       a.href = url;
       a.download = fileName;
       document.body.appendChild(a);
       a.click();
+      document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
-    } catch (error) {
+
+      toast({
+        title: "Berhasil",
+        description: "File berhasil didownload",
+      });
+    } catch (error: any) {
       console.error('Error downloading file:', error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Gagal mengunduh file",
+        description: error.message || "Gagal mengunduh file",
       });
     }
   };
