@@ -388,104 +388,220 @@ const RiwayatSoal = () => {
                   </p>
                 </div>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>File</TableHead>
-                       <TableHead>Mata Pelajaran</TableHead>
-                       <TableHead>Kelas</TableHead>
-                       <TableHead>Jenis Ujian</TableHead>
-                       <TableHead>Semester</TableHead>
-                       <TableHead>Tahun Ajaran</TableHead>
-                       <TableHead>Tanggal Upload</TableHead>
-                      <TableHead>Aksi</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {soalUploads.map((item) => (
-                      <TableRow key={item.id}>
-                        <TableCell>
-                          <div>
-                            <div className="font-medium">{item.file_name}</div>
-                            <div className="text-sm text-muted-foreground">
-                              {formatFileSize(item.file_size || 0)}
+                <div className="overflow-x-auto">
+                  <div className="min-w-full">
+                    {/* Mobile View - Cards */}
+                    <div className="block md:hidden space-y-4">
+                      {soalUploads.map((item) => (
+                        <Card key={item.id} className="p-4">
+                          <div className="space-y-3">
+                            <div>
+                              <div className="font-medium text-sm">{item.file_name}</div>
+                              <div className="text-xs text-muted-foreground">
+                                {formatFileSize(item.file_size || 0)}
+                              </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-2 text-xs">
+                              <div>
+                                <span className="text-muted-foreground">Mapel:</span>
+                                <Badge variant="outline" className="ml-1 text-xs">
+                                  {item.mapel?.nama}
+                                </Badge>
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground">Ujian:</span>
+                                <Badge variant="outline" className="ml-1 text-xs">
+                                  {item.jenis_ujian?.nama}
+                                </Badge>
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground">Semester:</span>
+                                <Badge variant="outline" className="ml-1 text-xs capitalize">
+                                  {item.semester}
+                                </Badge>
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground">Tahun:</span>
+                                <Badge variant="outline" className="ml-1 text-xs">
+                                  {item.tahun_ajaran?.nama}
+                                </Badge>
+                              </div>
+                            </div>
+                            
+                            <div>
+                              <span className="text-muted-foreground text-xs">Kelas:</span>
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {item.kelas_names?.map((namaKelas, index) => (
+                                  <Badge key={index} variant="outline" className="text-xs">
+                                    {namaKelas}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
+                            
+                            <div className="text-xs text-muted-foreground">
+                              {new Date(item.uploaded_at).toLocaleDateString('id-ID', {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </div>
+                            
+                            <div className="flex flex-wrap gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => window.open(item.file_url, '_blank')}
+                                className="flex-1"
+                              >
+                                <Eye className="h-4 w-4 mr-1" />
+                                Lihat
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDownload(item.file_url, item.file_name)}
+                                className="flex-1"
+                              >
+                                <Download className="h-4 w-4 mr-1" />
+                                Download
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleEdit(item)}
+                                className="flex-1"
+                              >
+                                <Edit className="h-4 w-4 mr-1" />
+                                Edit
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDelete(item.id, item.file_url)}
+                                className="flex-1"
+                              >
+                                <Trash2 className="h-4 w-4 mr-1" />
+                                Hapus
+                              </Button>
                             </div>
                           </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">
-                            {item.mapel?.nama}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex flex-wrap gap-1">
-                            {item.kelas_names?.map((namaKelas, index) => (
-                              <Badge key={index} variant="outline">
-                                {namaKelas}
-                              </Badge>
-                            ))}
-                          </div>
-                        </TableCell>
-                         <TableCell>
-                           <Badge variant="outline">
-                             {item.jenis_ujian?.nama}
-                           </Badge>
-                         </TableCell>
-                         <TableCell>
-                           <Badge variant="outline" className="capitalize">
-                             {item.semester}
-                           </Badge>
-                         </TableCell>
-                         <TableCell>
-                           <Badge variant="outline">
-                             {item.tahun_ajaran?.nama}
-                           </Badge>
-                         </TableCell>
-                        <TableCell>
-                          {new Date(item.uploaded_at).toLocaleDateString('id-ID', {
-                            year: 'numeric',
-                            month: 'short',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => window.open(item.file_url, '_blank')}
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleDownload(item.file_url, item.file_name)}
-                            >
-                              <Download className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleEdit(item)}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleDelete(item.id, item.file_url)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                        </Card>
+                      ))}
+                    </div>
+
+                    {/* Desktop View - Table */}
+                    <div className="hidden md:block">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="min-w-[200px]">File</TableHead>
+                            <TableHead className="min-w-[120px]">Mata Pelajaran</TableHead>
+                            <TableHead className="min-w-[100px]">Kelas</TableHead>
+                            <TableHead className="min-w-[120px]">Jenis Ujian</TableHead>
+                            <TableHead className="min-w-[80px]">Semester</TableHead>
+                            <TableHead className="min-w-[120px]">Tahun Ajaran</TableHead>
+                            <TableHead className="min-w-[150px]">Tanggal Upload</TableHead>
+                            <TableHead className="min-w-[200px]">Aksi</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {soalUploads.map((item) => (
+                            <TableRow key={item.id}>
+                              <TableCell>
+                                <div>
+                                  <div className="font-medium break-words max-w-[180px]">{item.file_name}</div>
+                                  <div className="text-sm text-muted-foreground">
+                                    {formatFileSize(item.file_size || 0)}
+                                  </div>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant="outline" className="break-words">
+                                  {item.mapel?.nama}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex flex-wrap gap-1 max-w-[120px]">
+                                  {item.kelas_names?.map((namaKelas, index) => (
+                                    <Badge key={index} variant="outline" className="text-xs">
+                                      {namaKelas}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant="outline" className="break-words">
+                                  {item.jenis_ujian?.nama}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant="outline" className="capitalize">
+                                  {item.semester}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant="outline" className="break-words">
+                                  {item.tahun_ajaran?.nama}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <div className="text-sm">
+                                  {new Date(item.uploaded_at).toLocaleDateString('id-ID', {
+                                    year: 'numeric',
+                                    month: 'short',
+                                    day: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  })}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-1 flex-wrap">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => window.open(item.file_url, '_blank')}
+                                    title="Lihat"
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleDownload(item.file_url, item.file_name)}
+                                    title="Download"
+                                  >
+                                    <Download className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleEdit(item)}
+                                    title="Edit"
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleDelete(item.id, item.file_url)}
+                                    title="Hapus"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
+                </div>
               )}
             </CardContent>
           </Card>
