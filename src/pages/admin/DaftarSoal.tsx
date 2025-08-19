@@ -191,35 +191,19 @@ const DaftarSoal = () => {
 
   const handleDownload = async (fileUrl: string, fileName: string) => {
     try {
-      console.log('Download started for:', fileName);
-      console.log('File URL:', fileUrl);
+      console.log('Starting download for:', fileName);
       
-      // Extract file path from URL for Supabase storage
-      const urlParts = fileUrl.split('/');
-      console.log('URL parts:', urlParts);
-      const filePath = urlParts.slice(-3).join('/'); // Get soal/user_id/filename
-      console.log('Extracted file path:', filePath);
+      // Try direct fetch first since it's more reliable
+      const response = await fetch(fileUrl);
       
-      // Use Supabase storage to download the file properly
-      const { data, error } = await supabase.storage
-        .from('soal-files')
-        .download(filePath);
-
-      console.log('Storage download result:', { data, error });
-
-      if (error) {
-        console.error('Storage download error:', error);
-        throw error;
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
-
-      if (!data) {
-        throw new Error('No file data received');
-      }
-
-      console.log('File data received, size:', data.size);
-
-      // Create blob URL and download
-      const url = window.URL.createObjectURL(data);
+      
+      const blob = await response.blob();
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.style.display = 'none';
       a.href = url;
@@ -228,51 +212,18 @@ const DaftarSoal = () => {
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
-
-      console.log('Download completed successfully');
+      
       toast({
         title: "Berhasil",
         description: "File berhasil didownload",
       });
     } catch (error: any) {
-      console.error('Error downloading file:', error);
-      console.error('Error details:', {
-        message: error.message,
-        statusCode: error.statusCode,
-        error: error.error
+      console.error('Download error:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Gagal mengunduh file. Silakan coba lagi.",
       });
-      
-      // Fallback to direct URL download if storage download fails
-      try {
-        console.log('Attempting fallback download method...');
-        const response = await fetch(fileUrl);
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.style.display = 'none';
-        a.href = url;
-        a.download = fileName;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
-        
-        console.log('Fallback download completed successfully');
-        toast({
-          title: "Berhasil",
-          description: "File berhasil didownload",
-        });
-      } catch (fallbackError: any) {
-        console.error('Fallback download also failed:', fallbackError);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: error.message || "Gagal mengunduh file",
-        });
-      }
     }
   };
 
