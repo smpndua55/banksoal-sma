@@ -78,7 +78,6 @@ export default {
 					DEFAULT: 'hsl(var(--info))',
 					foreground: 'hsl(var(--info-foreground))'
 				}
-				}
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
