@@ -21,7 +21,7 @@ const AnnouncementCard: React.FC<AnnouncementCardProps> = ({
 
   return (
     <>
-      <Card className="w-full cursor-pointer hover:shadow-md transition-shadow" onClick={() => setIsDialogOpen(true)}>
+      <Card className="max-w-sm cursor-pointer hover:shadow-md transition-shadow" onClick={() => setIsDialogOpen(true)}>
         <CardHeader>
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-2">
