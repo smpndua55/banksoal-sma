@@ -138,6 +138,7 @@ export type Database = {
           jenis_ujian_id: string
           kelas_ids: string[]
           mapel_id: string
+          semester: string
           tahun_ajaran_id: string
           uploaded_at: string
         }
@@ -150,6 +151,7 @@ export type Database = {
           jenis_ujian_id: string
           kelas_ids?: string[]
           mapel_id: string
+          semester?: string
           tahun_ajaran_id: string
           uploaded_at?: string
         }
@@ -162,6 +164,7 @@ export type Database = {
           jenis_ujian_id?: string
           kelas_ids?: string[]
           mapel_id?: string
+          semester?: string
           tahun_ajaran_id?: string
           uploaded_at?: string
         }

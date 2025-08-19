@@ -29,6 +29,7 @@ const UploadSoal = () => {
     mapel_id: '',
     kelas_ids: [] as string[],
     jenis_ujian_id: '',
+    semester: '',
     file: null as File | null
   });
   const { toast } = useToast();
@@ -129,10 +130,24 @@ const UploadSoal = () => {
     setUploading(true);
     
     try {
-      // Generate unique filename
+      // Get related data for filename generation
+      const [tahunAjaranData, mapelData] = await Promise.all([
+        supabase.from('tahun_ajaran').select('nama').eq('id', formData.tahun_ajaran_id).single(),
+        supabase.from('mapel').select('nama').eq('id', formData.mapel_id).single()
+      ]);
+
+      // Get kelas names
+      const { data: kelasData } = await supabase
+        .from('kelas')
+        .select('nama')
+        .in('id', formData.kelas_ids);
+
+      // Generate filename: mata_pelajaran_kelas_tahun_ajaran_semester
       const fileExt = formData.file.name.split('.').pop();
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-      const filePath = `soal/${user.id}/${fileName}`;
+      const kelasNames = kelasData?.map(k => k.nama).join('-') || 'unknown';
+      const fileName = `${mapelData.data?.nama || 'unknown'}_${kelasNames}_${tahunAjaranData.data?.nama || 'unknown'}_${formData.semester}.${fileExt}`;
+      const uniqueFileName = `${Date.now()}-${fileName}`;
+      const filePath = `soal/${user.id}/${uniqueFileName}`;
 
       // Upload file to storage
       const { error: uploadError } = await supabase.storage
@@ -155,7 +170,8 @@ const UploadSoal = () => {
           mapel_id: formData.mapel_id,
           kelas_ids: formData.kelas_ids,
           jenis_ujian_id: formData.jenis_ujian_id,
-          file_name: formData.file.name,
+          semester: formData.semester,
+          file_name: uniqueFileName,
           file_url: publicUrl,
           file_size: formData.file.size
         }]);
@@ -173,6 +189,7 @@ const UploadSoal = () => {
         mapel_id: '',
         kelas_ids: [],
         jenis_ujian_id: '',
+        semester: '',
         file: null
       });
 
@@ -310,6 +327,23 @@ const UploadSoal = () => {
                             {item.nama}
                           </SelectItem>
                         ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="semester">Semester</Label>
+                    <Select
+                      value={formData.semester}
+                      onValueChange={(value) => setFormData({ ...formData, semester: value })}
+                      required
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Pilih semester" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="ganjil">Ganjil</SelectItem>
+                        <SelectItem value="genap">Genap</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

@@ -24,6 +24,7 @@ interface SoalUpload {
   kelas_ids: string[];
   kelas_names?: string[];
   jenis_ujian: { nama: string };
+  semester: string;
 }
 
 interface FilterOptions {
@@ -444,11 +445,12 @@ const DaftarSoal = () => {
                         <TableRow>
                           <TableHead>File</TableHead>
                           <TableHead>Guru</TableHead>
-                          <TableHead>Mata Pelajaran</TableHead>
-                          <TableHead>Kelas</TableHead>
-                          <TableHead>Jenis Ujian</TableHead>
-                          <TableHead>Tahun Ajaran</TableHead>
-                          <TableHead>Tanggal Upload</TableHead>
+                           <TableHead>Mata Pelajaran</TableHead>
+                           <TableHead>Kelas</TableHead>
+                           <TableHead>Jenis Ujian</TableHead>
+                           <TableHead>Semester</TableHead>
+                           <TableHead>Tahun Ajaran</TableHead>
+                           <TableHead>Tanggal Upload</TableHead>
                           <TableHead>Aksi</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -482,16 +484,21 @@ const DaftarSoal = () => {
                                 ))}
                               </div>
                             </TableCell>
-                            <TableCell>
-                              <Badge variant="outline">
-                                {item.jenis_ujian?.nama}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant="outline">
-                                {item.tahun_ajaran?.nama}
-                              </Badge>
-                            </TableCell>
+                             <TableCell>
+                               <Badge variant="outline">
+                                 {item.jenis_ujian?.nama}
+                               </Badge>
+                             </TableCell>
+                             <TableCell>
+                               <Badge variant="outline" className="capitalize">
+                                 {item.semester}
+                               </Badge>
+                             </TableCell>
+                             <TableCell>
+                               <Badge variant="outline">
+                                 {item.tahun_ajaran?.nama}
+                               </Badge>
+                             </TableCell>
                             <TableCell>
                               {new Date(item.uploaded_at).toLocaleDateString('id-ID', {
                                 year: 'numeric',

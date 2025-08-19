@@ -26,6 +26,7 @@ interface SoalUpload {
   kelas_ids: string[];
   kelas_names?: string[];
   jenis_ujian_id: string;
+  semester: string;
   tahun_ajaran: { nama: string };
   mapel: { nama: string };
   jenis_ujian: { nama: string };
@@ -53,6 +54,7 @@ const RiwayatSoal = () => {
     mapel_id: '',
     kelas_ids: [] as string[],
     jenis_ujian_id: '',
+    semester: '',
     file: null as File | null,
     replaceFile: false
   });
@@ -134,14 +136,15 @@ const RiwayatSoal = () => {
 
   const handleEdit = (soal: SoalUpload) => {
     setEditingSoal(soal);
-    setEditFormData({
-      tahun_ajaran_id: soal.tahun_ajaran_id,
-      mapel_id: soal.mapel_id,
-      kelas_ids: soal.kelas_ids,
-      jenis_ujian_id: soal.jenis_ujian_id,
-      file: null,
-      replaceFile: false
-    });
+      setEditFormData({
+        tahun_ajaran_id: soal.tahun_ajaran_id,
+        mapel_id: soal.mapel_id,
+        kelas_ids: soal.kelas_ids,
+        jenis_ujian_id: soal.jenis_ujian_id,
+        semester: soal.semester || 'ganjil',
+        file: null,
+        replaceFile: false
+      });
     setIsEditDialogOpen(true);
   };
 
@@ -389,11 +392,12 @@ const RiwayatSoal = () => {
                   <TableHeader>
                     <TableRow>
                       <TableHead>File</TableHead>
-                      <TableHead>Mata Pelajaran</TableHead>
-                      <TableHead>Kelas</TableHead>
-                      <TableHead>Jenis Ujian</TableHead>
-                      <TableHead>Tahun Ajaran</TableHead>
-                      <TableHead>Tanggal Upload</TableHead>
+                       <TableHead>Mata Pelajaran</TableHead>
+                       <TableHead>Kelas</TableHead>
+                       <TableHead>Jenis Ujian</TableHead>
+                       <TableHead>Semester</TableHead>
+                       <TableHead>Tahun Ajaran</TableHead>
+                       <TableHead>Tanggal Upload</TableHead>
                       <TableHead>Aksi</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -422,16 +426,21 @@ const RiwayatSoal = () => {
                             ))}
                           </div>
                         </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">
-                            {item.jenis_ujian?.nama}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">
-                            {item.tahun_ajaran?.nama}
-                          </Badge>
-                        </TableCell>
+                         <TableCell>
+                           <Badge variant="outline">
+                             {item.jenis_ujian?.nama}
+                           </Badge>
+                         </TableCell>
+                         <TableCell>
+                           <Badge variant="outline" className="capitalize">
+                             {item.semester}
+                           </Badge>
+                         </TableCell>
+                         <TableCell>
+                           <Badge variant="outline">
+                             {item.tahun_ajaran?.nama}
+                           </Badge>
+                         </TableCell>
                         <TableCell>
                           {new Date(item.uploaded_at).toLocaleDateString('id-ID', {
                             year: 'numeric',
@@ -559,25 +568,42 @@ const RiwayatSoal = () => {
                   )}
                 </div>
 
-                <div>
-                  <Label htmlFor="edit_jenis_ujian_id">Jenis Ujian</Label>
-                  <Select
-                    value={editFormData.jenis_ujian_id}
-                    onValueChange={(value) => setEditFormData({ ...editFormData, jenis_ujian_id: value })}
-                    required
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Pilih jenis ujian" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {jenisUjian.map((item) => (
-                        <SelectItem key={item.id} value={item.id}>
-                          {item.nama}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                 <div>
+                   <Label htmlFor="edit_jenis_ujian_id">Jenis Ujian</Label>
+                   <Select
+                     value={editFormData.jenis_ujian_id}
+                     onValueChange={(value) => setEditFormData({ ...editFormData, jenis_ujian_id: value })}
+                     required
+                   >
+                     <SelectTrigger>
+                       <SelectValue placeholder="Pilih jenis ujian" />
+                     </SelectTrigger>
+                     <SelectContent>
+                       {jenisUjian.map((item) => (
+                         <SelectItem key={item.id} value={item.id}>
+                           {item.nama}
+                         </SelectItem>
+                       ))}
+                     </SelectContent>
+                   </Select>
+                 </div>
+
+                 <div>
+                   <Label htmlFor="edit_semester">Semester</Label>
+                   <Select
+                     value={editFormData.semester}
+                     onValueChange={(value) => setEditFormData({ ...editFormData, semester: value })}
+                     required
+                   >
+                     <SelectTrigger>
+                       <SelectValue placeholder="Pilih semester" />
+                     </SelectTrigger>
+                     <SelectContent>
+                       <SelectItem value="ganjil">Ganjil</SelectItem>
+                       <SelectItem value="genap">Genap</SelectItem>
+                     </SelectContent>
+                   </Select>
+                 </div>
               </div>
 
               <div>
