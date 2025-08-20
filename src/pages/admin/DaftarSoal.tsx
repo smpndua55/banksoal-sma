@@ -192,8 +192,98 @@ const DaftarSoal = () => {
   const handleDownload = async (fileUrl: string, fileName: string) => {
     try {
       console.log('Starting download for:', fileName);
+      console.log('File URL:', fileUrl);
       
-      // Try direct fetch first since it's more reliable
+      // Method 1: Try using Supabase storage download method first
+      try {
+        // Extract file path from URL
+        const url = new URL(fileUrl);
+        const pathParts = url.pathname.split('/');
+        
+        // Find the bucket name and file path
+        const bucketIndex = pathParts.findIndex(part => part === 'storage');
+        if (bucketIndex !== -1 && pathParts[bucketIndex + 2] === 'object') {
+          const bucketName = pathParts[bucketIndex + 3];
+          const filePath = pathParts.slice(bucketIndex + 4).join('/');
+          
+          console.log('Bucket:', bucketName, 'Path:', filePath);
+          
+          // Download using Supabase storage
+          const { data, error } = await supabase.storage
+            .from(bucketName)
+            .download(filePath);
+            
+          if (error) {
+            console.warn('Supabase storage download failed:', error);
+            throw error;
+          }
+          
+          // Create download link
+          const url = window.URL.createObjectURL(data);
+          const a = document.createElement('a');
+          a.style.display = 'none';
+          a.href = url;
+          a.download = fileName;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(url);
+          
+          toast({
+            title: "Berhasil",
+            description: "File berhasil didownload",
+          });
+          return;
+        }
+      } catch (storageError) {
+        console.warn('Supabase storage method failed, trying direct fetch:', storageError);
+      }
+      
+      // Method 2: Fallback to direct fetch with signed URL
+      try {
+        // Get signed URL for download
+        const url = new URL(fileUrl);
+        const pathParts = url.pathname.split('/');
+        const bucketIndex = pathParts.findIndex(part => part === 'storage');
+        
+        if (bucketIndex !== -1 && pathParts[bucketIndex + 2] === 'object') {
+          const bucketName = pathParts[bucketIndex + 3];
+          const filePath = pathParts.slice(bucketIndex + 4).join('/');
+          
+          const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+            .from(bucketName)
+            .createSignedUrl(filePath, 60); // 60 seconds expiry
+            
+          if (signedUrlError) throw signedUrlError;
+          
+          // Download using signed URL
+          const response = await fetch(signedUrlData.signedUrl);
+          if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+          
+          const blob = await response.blob();
+          
+          // Create download link
+          const downloadUrl = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.style.display = 'none';
+          a.href = downloadUrl;
+          a.download = fileName;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(downloadUrl);
+          
+          toast({
+            title: "Berhasil",
+            description: "File berhasil didownload",
+          });
+          return;
+        }
+      } catch (signedUrlError) {
+        console.warn('Signed URL method failed, trying direct fetch:', signedUrlError);
+      }
+      
+      // Method 3: Final fallback - direct fetch (original method)
       const response = await fetch(fileUrl);
       
       if (!response.ok) {
@@ -203,26 +293,27 @@ const DaftarSoal = () => {
       const blob = await response.blob();
       
       // Create download link
-      const url = window.URL.createObjectURL(blob);
+      const downloadUrl = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.style.display = 'none';
-      a.href = url;
+      a.href = downloadUrl;
       a.download = fileName;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
+      window.URL.revokeObjectURL(downloadUrl);
       
       toast({
         title: "Berhasil",
         description: "File berhasil didownload",
       });
+      
     } catch (error: any) {
       console.error('Download error:', error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Gagal mengunduh file. Silakan coba lagi.",
+        description: `Gagal mengunduh file: ${error.message}. Silakan coba lagi.`,
       });
     }
   };
@@ -232,15 +323,25 @@ const DaftarSoal = () => {
 
     try {
       // Extract file path from URL
-      const urlParts = fileUrl.split('/');
-      const filePath = urlParts.slice(-3).join('/');
+      const url = new URL(fileUrl);
+      const pathParts = url.pathname.split('/');
+      
+      // Find the bucket name and file path
+      const bucketIndex = pathParts.findIndex(part => part === 'storage');
+      if (bucketIndex !== -1 && pathParts[bucketIndex + 2] === 'object') {
+        const bucketName = pathParts[bucketIndex + 3];
+        const filePath = pathParts.slice(bucketIndex + 4).join('/');
+        
+        // Delete from storage
+        const { error: storageError } = await supabase.storage
+          .from(bucketName)
+          .remove([filePath]);
 
-      // Delete from storage
-      const { error: storageError } = await supabase.storage
-        .from('soal-files')
-        .remove([filePath]);
-
-      if (storageError) throw storageError;
+        if (storageError) {
+          console.warn('Storage deletion failed:', storageError);
+          // Continue with database deletion even if storage deletion fails
+        }
+      }
 
       // Delete from database
       const { error: dbError } = await supabase
