@@ -192,19 +192,265 @@ const DaftarSoal = () => {
 
   const getFilePathFromUrl = (fileUrl: string) => {
     try {
-      const url = new URL(fileUrl);
-      // Extract path from Supabase storage URL
-      // Format: /storage/v1/object/public/bucket/path/to/file
-      const pathParts = url.pathname.split('/');
-      const bucketIndex = pathParts.findIndex(part => part === 'public') + 1;
-      if (bucketIndex > 0 && bucketIndex < pathParts.length) {
-        return pathParts.slice(bucketIndex + 1).join('/');
+      console.log('Original URL:', fileUrl);
+      
+      // Handle different URL formats
+      if (fileUrl.includes('/storage/v1/object/public/')) {
+        // Standard Supabase public URL format
+        const parts = fileUrl.split('/storage/v1/object/public/');
+        if (parts.length > 1) {
+          const afterPublic = parts[1];
+          // Remove bucket name (first segment) to get file path
+          const pathParts = afterPublic.split('/');
+          if (pathParts.length > 1) {
+            const filePath = pathParts.slice(1).join('/');
+            console.log('Extracted file path:', filePath);
+            return filePath;
+          }
+        }
       }
-      // Fallback: try to extract last 3 parts
-      return pathParts.slice(-3).join('/');
+      
+      // Fallback: Extract from URL pathname
+      const url = new URL(fileUrl);
+      const pathParts = url.pathname.split('/').filter(part => part);
+      
+      // Find the bucket name and extract path after it
+      const bucketIndex = pathParts.findIndex(part => part === 'soal-files');
+      if (bucketIndex >= 0 && bucketIndex < pathParts.length - 1) {
+        const filePath = pathParts.slice(bucketIndex + 1).join('/');
+        console.log('Fallback extracted file path:', filePath);
+        return filePath;
+      }
+      
+      // Last resort: take last few parts
+      const filePath = pathParts.slice(-3).join('/');
+      console.log('Last resort file path:', filePath);
+      return filePath;
+      
     } catch (error) {
       console.error('Error parsing file URL:', error);
       return null;
+    }
+  };
+
+  const downloadBlob = (blob: Blob, fileName: string) => {
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.style.display = 'none';
+    a.href = url;
+    a.download = fileName;
+    
+    // Add to DOM, click, and remove
+    document.body.appendChild(a);
+    a.click();
+    
+    // Cleanup
+    setTimeout(() => {
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    }, 100);
+  };
+
+  const handleDownload = async (fileUrl: string, fileName: string, id: string) => {
+    setDownloading(id);
+    
+    try {
+      console.log('=== DOWNLOAD START ===');
+      console.log('File:', fileName);
+      console.log('URL:', fileUrl);
+
+      const filePath = getFilePathFromUrl(fileUrl);
+      console.log('Parsed file path:', filePath);
+
+      if (!filePath) {
+        throw new Error('Could not parse file path from URL');
+      }
+
+      // Method 1: Direct Supabase storage download (most reliable)
+      console.log('Method 1: Supabase storage download');
+      try {
+        const { data, error } = await supabase.storage
+          .from('soal-files')
+          .download(filePath);
+
+        if (error) {
+          console.log('Storage download error:', error);
+          throw error;
+        }
+
+        if (data && data.size > 0) {
+          console.log('Download successful, file size:', data.size);
+          downloadBlob(data, fileName);
+          
+          toast({
+            title: "Berhasil",
+            description: "File berhasil didownload",
+          });
+          return;
+        } else {
+          throw new Error('Empty file received');
+        }
+      } catch (storageError) {
+        console.log('Method 1 failed:', storageError);
+      }
+
+      // Method 2: Create signed URL and download
+      console.log('Method 2: Signed URL download');
+      try {
+        const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+          .from('soal-files')
+          .createSignedUrl(filePath, 300); // 5 minutes
+
+        if (signedUrlError) {
+          console.log('Signed URL error:', signedUrlError);
+          throw signedUrlError;
+        }
+
+        if (signedUrlData?.signedUrl) {
+          console.log('Signed URL created, fetching...');
+          
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+          
+          const response = await fetch(signedUrlData.signedUrl, {
+            method: 'GET',
+            signal: controller.signal
+          });
+          
+          clearTimeout(timeoutId);
+          
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+          
+          const blob = await response.blob();
+          console.log('Signed URL download successful, blob size:', blob.size);
+          
+          if (blob.size === 0) {
+            throw new Error('Empty file downloaded');
+          }
+          
+          downloadBlob(blob, fileName);
+          
+          toast({
+            title: "Berhasil",
+            description: "File berhasil didownload",
+          });
+          return;
+        }
+      } catch (signedUrlErr) {
+        console.log('Method 2 failed:', signedUrlErr);
+      }
+
+      // Method 3: Try direct URL access (for public files)
+      console.log('Method 3: Direct URL access');
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000);
+        
+        const response = await fetch(fileUrl, {
+          method: 'GET',
+          mode: 'cors',
+          cache: 'no-cache',
+          signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const blob = await response.blob();
+        console.log('Direct URL download successful, blob size:', blob.size);
+        
+        if (blob.size === 0) {
+          throw new Error('Empty file downloaded');
+        }
+        
+        downloadBlob(blob, fileName);
+        
+        toast({
+          title: "Berhasil",
+          description: "File berhasil didownload",
+        });
+        return;
+        
+      } catch (directUrlErr) {
+        console.log('Method 3 failed:', directUrlErr);
+      }
+
+      // All methods failed
+      throw new Error('All download methods failed');
+      
+    } catch (error: any) {
+      console.error('=== DOWNLOAD FAILED ===');
+      console.error('Error:', error);
+      
+      // Final fallback: try to open in new tab
+      console.log('Fallback: Opening in new tab');
+      try {
+        const link = document.createElement('a');
+        link.href = fileUrl;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        toast({
+          title: "Info",
+          description: "File dibuka di tab baru. Silakan unduh dari browser.",
+        });
+      } catch (fallbackError) {
+        console.error('Fallback also failed:', fallbackError);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: `Gagal mengunduh file. Error: ${error.message}. Silakan coba tombol 'Lihat' untuk membuka file.`,
+        });
+      }
+    } finally {
+      setDownloading(null);
+      console.log('=== DOWNLOAD END ===');
+    }
+  };
+
+  // Debug function to check file accessibility
+  const checkFileAccess = async (fileUrl: string, filePath: string | null) => {
+    console.log('=== FILE ACCESS CHECK ===');
+    console.log('Original URL:', fileUrl);
+    console.log('Parsed Path:', filePath);
+    
+    if (filePath) {
+      // Check if file exists in storage
+      try {
+        const { data, error } = await supabase.storage
+          .from('soal-files')
+          .list(filePath.split('/').slice(0, -1).join('/') || '');
+        
+        console.log('Storage list result:', { data, error });
+        
+        if (data) {
+          const fileName = filePath.split('/').pop();
+          const fileExists = data.some(file => file.name === fileName);
+          console.log(`File "${fileName}" exists in storage:`, fileExists);
+        }
+      } catch (listError) {
+        console.log('Storage list error:', listError);
+      }
+    }
+    
+    // Try to get file info
+    try {
+      const response = await fetch(fileUrl, { method: 'HEAD' });
+      console.log('HEAD request result:', {
+        status: response.status,
+        statusText: response.statusText,
+        headers: Object.fromEntries(response.headers.entries())
+      });
+    } catch (headError) {
+      console.log('HEAD request error:', headError);
     }
   };
 
@@ -212,28 +458,35 @@ const DaftarSoal = () => {
     setDownloading(id);
     
     try {
-      console.log('Starting download for:', fileName, 'URL:', fileUrl);
+      console.log('=== DOWNLOAD START ===');
+      console.log('File:', fileName);
+      console.log('URL:', fileUrl);
 
-      // Method 1: Try Supabase Storage download method first
       const filePath = getFilePathFromUrl(fileUrl);
-      if (filePath) {
-        console.log('Trying Supabase storage download, file path:', filePath);
-        
+      console.log('Parsed file path:', filePath);
+
+      // Debug file access
+      await checkFileAccess(fileUrl, filePath);
+
+      if (!filePath) {
+        throw new Error('Could not parse file path from URL');
+      }
+
+      // Method 1: Direct Supabase storage download (most reliable)
+      console.log('Method 1: Supabase storage download');
+      try {
         const { data, error } = await supabase.storage
           .from('soal-files')
           .download(filePath);
 
-        if (!error && data) {
-          console.log('Supabase storage download successful');
-          const url = window.URL.createObjectURL(data);
-          const a = document.createElement('a');
-          a.style.display = 'none';
-          a.href = url;
-          a.download = fileName;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          window.URL.revokeObjectURL(url);
+        if (error) {
+          console.log('Storage download error:', error);
+          throw error;
+        }
+
+        if (data && data.size > 0) {
+          console.log('Download successful, file size:', data.size);
+          downloadBlob(data, fileName);
           
           toast({
             title: "Berhasil",
@@ -241,108 +494,131 @@ const DaftarSoal = () => {
           });
           return;
         } else {
-          console.log('Supabase storage download failed:', error);
+          throw new Error('Empty file received');
         }
+      } catch (storageError) {
+        console.log('Method 1 failed:', storageError);
       }
 
-      // Method 2: Try signed URL method
-      console.log('Trying signed URL method');
-      if (filePath) {
+      // Method 2: Create signed URL and download
+      console.log('Method 2: Signed URL download');
+      try {
         const { data: signedUrlData, error: signedUrlError } = await supabase.storage
           .from('soal-files')
-          .createSignedUrl(filePath, 60); // 60 seconds expiry
+          .createSignedUrl(filePath, 300); // 5 minutes
 
-        if (!signedUrlError && signedUrlData?.signedUrl) {
-          console.log('Signed URL created:', signedUrlData.signedUrl);
+        if (signedUrlError) {
+          console.log('Signed URL error:', signedUrlError);
+          throw signedUrlError;
+        }
+
+        if (signedUrlData?.signedUrl) {
+          console.log('Signed URL created, fetching...');
           
-          const response = await fetch(signedUrlData.signedUrl);
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+          
+          const response = await fetch(signedUrlData.signedUrl, {
+            method: 'GET',
+            signal: controller.signal
+          });
+          
+          clearTimeout(timeoutId);
+          
           if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
           }
           
           const blob = await response.blob();
-          const url = window.URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.style.display = 'none';
-          a.href = url;
-          a.download = fileName;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          window.URL.revokeObjectURL(url);
+          console.log('Signed URL download successful, blob size:', blob.size);
+          
+          if (blob.size === 0) {
+            throw new Error('Empty file downloaded');
+          }
+          
+          downloadBlob(blob, fileName);
           
           toast({
             title: "Berhasil",
             description: "File berhasil didownload",
           });
           return;
-        } else {
-          console.log('Signed URL creation failed:', signedUrlError);
         }
+      } catch (signedUrlErr) {
+        console.log('Method 2 failed:', signedUrlErr);
       }
 
-      // Method 3: Direct fetch with proper headers
-      console.log('Trying direct fetch method');
-      const response = await fetch(fileUrl, {
-        method: 'GET',
-        headers: {
-          'Accept': '*/*',
-        },
-        mode: 'cors'
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}`);
+      // Method 3: Try direct URL access (for public files)
+      console.log('Method 3: Direct URL access');
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000);
+        
+        const response = await fetch(fileUrl, {
+          method: 'GET',
+          mode: 'cors',
+          cache: 'no-cache',
+          signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const blob = await response.blob();
+        console.log('Direct URL download successful, blob size:', blob.size);
+        
+        if (blob.size === 0) {
+          throw new Error('Empty file downloaded');
+        }
+        
+        downloadBlob(blob, fileName);
+        
+        toast({
+          title: "Berhasil",
+          description: "File berhasil didownload",
+        });
+        return;
+        
+      } catch (directUrlErr) {
+        console.log('Method 3 failed:', directUrlErr);
       }
-      
-      const blob = await response.blob();
-      
-      // Ensure we have content
-      if (blob.size === 0) {
-        throw new Error('Downloaded file is empty');
-      }
-      
-      // Create download link
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.style.display = 'none';
-      a.href = url;
-      a.download = fileName;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-      
-      toast({
-        title: "Berhasil",
-        description: "File berhasil didownload",
-      });
+
+      // All methods failed
+      throw new Error('All download methods failed');
       
     } catch (error: any) {
-      console.error('Download error:', error);
+      console.error('=== DOWNLOAD FAILED ===');
+      console.error('Error:', error);
       
-      // Method 4: Fallback - open in new tab
-      console.log('All download methods failed, trying fallback: open in new tab');
+      // Final fallback: try to open in new tab
+      console.log('Fallback: Opening in new tab');
       try {
-        const newWindow = window.open(fileUrl, '_blank');
-        if (newWindow) {
-          toast({
-            title: "Info",
-            description: "File dibuka di tab baru. Anda dapat mengunduhnya dari sana.",
-          });
-        } else {
-          throw new Error('Popup blocked');
-        }
+        const link = document.createElement('a');
+        link.href = fileUrl;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        toast({
+          title: "Info",
+          description: "File dibuka di tab baru. Silakan unduh dari browser.",
+        });
       } catch (fallbackError) {
-        console.error('Fallback method also failed:', fallbackError);
+        console.error('Fallback also failed:', fallbackError);
         toast({
           variant: "destructive",
           title: "Error",
-          description: `Gagal mengunduh file: ${error.message || 'Unknown error'}. Coba klik tombol 'Lihat' untuk membuka file di tab baru.`,
+          description: `Gagal mengunduh file. Error: ${error.message}. Silakan coba tombol 'Lihat' untuk membuka file.`,
         });
       }
     } finally {
       setDownloading(null);
+      console.log('=== DOWNLOAD END ===');
     }
   };
 
@@ -669,6 +945,27 @@ const DaftarSoal = () => {
                                   ) : (
                                     <Download className="h-4 w-4" />
                                   )}
+                                </Button>
+                                {/* Debug button - remove in production */}
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    const filePath = getFilePathFromUrl(item.file_url);
+                                    console.log('=== DEBUG INFO ===');
+                                    console.log('File Name:', item.file_name);
+                                    console.log('File URL:', item.file_url);
+                                    console.log('Parsed Path:', filePath);
+                                    console.log('File Size:', item.file_size);
+                                    toast({
+                                      title: "Debug Info (Lihat Console)",
+                                      description: `Path: ${filePath}`,
+                                    });
+                                  }}
+                                  title="Debug info (lihat console)"
+                                  className="text-xs"
+                                >
+                                  🐛
                                 </Button>
                                 <Button
                                   variant="outline"
