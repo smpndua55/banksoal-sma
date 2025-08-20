@@ -192,59 +192,8 @@ const DaftarSoal = () => {
   const handleDownload = async (fileUrl: string, fileName: string) => {
     try {
       console.log('Starting download for:', fileName);
-      console.log('File URL:', fileUrl);
       
-      // Method 1: Try using Supabase storage download method
-      try {
-        // Extract the file path from the URL
-        // For Supabase storage URLs, the path is usually after the bucket name
-        const url = new URL(fileUrl);
-        let filePath = '';
-        
-        // Check if it's a Supabase storage URL
-        if (fileUrl.includes('/storage/v1/object/')) {
-          // Extract path after the bucket name
-          const pathParts = url.pathname.split('/');
-          const bucketIndex = pathParts.findIndex(part => part === 'soal-files');
-          if (bucketIndex !== -1 && bucketIndex < pathParts.length - 1) {
-            filePath = pathParts.slice(bucketIndex + 1).join('/');
-          }
-        }
-        
-        console.log('Extracted file path:', filePath);
-        
-        if (filePath) {
-          // Use Supabase storage download method
-          const { data, error } = await supabase.storage
-            .from('soal-files')
-            .download(filePath);
-          
-          if (error) throw error;
-          
-          if (data) {
-            // Create download link from blob
-            const url = window.URL.createObjectURL(data);
-            const a = document.createElement('a');
-            a.style.display = 'none';
-            a.href = url;
-            a.download = fileName;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
-            
-            toast({
-              title: "Berhasil",
-              description: "File berhasil didownload",
-            });
-            return;
-          }
-        }
-      } catch (supabaseError) {
-        console.log('Supabase download method failed, trying direct fetch:', supabaseError);
-      }
-      
-      // Method 2: Fallback to direct fetch
+      // Try direct fetch first since it's more reliable
       const response = await fetch(fileUrl);
       
       if (!response.ok) {
@@ -268,24 +217,13 @@ const DaftarSoal = () => {
         title: "Berhasil",
         description: "File berhasil didownload",
       });
-      
     } catch (error: any) {
       console.error('Download error:', error);
-      
-      // Method 3: Last resort - open in new tab
-      try {
-        window.open(fileUrl, '_blank');
-        toast({
-          title: "Informasi",
-          description: "File dibuka di tab baru. Silakan gunakan Ctrl+S untuk menyimpan.",
-        });
-      } catch (openError) {
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Gagal mengunduh file. Silakan coba lagi atau hubungi administrator.",
-        });
-      }
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Gagal mengunduh file. Silakan coba lagi.",
+      });
     }
   };
 
@@ -293,28 +231,16 @@ const DaftarSoal = () => {
     if (!confirm('Apakah Anda yakin ingin menghapus soal ini?')) return;
 
     try {
-      // Extract file path from URL for storage deletion
-      const url = new URL(fileUrl);
-      let filePath = '';
-      
-      if (fileUrl.includes('/storage/v1/object/')) {
-        const pathParts = url.pathname.split('/');
-        const bucketIndex = pathParts.findIndex(part => part === 'soal-files');
-        if (bucketIndex !== -1 && bucketIndex < pathParts.length - 1) {
-          filePath = pathParts.slice(bucketIndex + 1).join('/');
-        }
-      }
+      // Extract file path from URL
+      const urlParts = fileUrl.split('/');
+      const filePath = urlParts.slice(-3).join('/');
 
-      // Delete from storage if file path is found
-      if (filePath) {
-        const { error: storageError } = await supabase.storage
-          .from('soal-files')
-          .remove([filePath]);
+      // Delete from storage
+      const { error: storageError } = await supabase.storage
+        .from('soal-files')
+        .remove([filePath]);
 
-        if (storageError) {
-          console.warn('Storage deletion error:', storageError);
-        }
-      }
+      if (storageError) throw storageError;
 
       // Delete from database
       const { error: dbError } = await supabase
@@ -604,7 +530,6 @@ const DaftarSoal = () => {
                                   variant="outline"
                                   size="sm"
                                   onClick={() => window.open(item.file_url, '_blank')}
-                                  title="Lihat file"
                                 >
                                   <Eye className="h-4 w-4" />
                                 </Button>
@@ -612,7 +537,6 @@ const DaftarSoal = () => {
                                   variant="outline"
                                   size="sm"
                                   onClick={() => handleDownload(item.file_url, item.file_name)}
-                                  title="Download file"
                                 >
                                   <Download className="h-4 w-4" />
                                 </Button>
@@ -620,7 +544,6 @@ const DaftarSoal = () => {
                                   variant="outline"
                                   size="sm"
                                   onClick={() => handleDelete(item.id, item.file_url)}
-                                  title="Hapus file"
                                 >
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
@@ -697,4 +620,4 @@ const DaftarSoal = () => {
   );
 };
 
-export default DaftarSoal;
+export default DaftarSoal
