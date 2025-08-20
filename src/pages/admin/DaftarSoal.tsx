@@ -56,6 +56,7 @@ const DaftarSoal = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
+  const [downloading, setDownloading] = useState<string | null>(null);
   const itemsPerPage = 10;
   const { toast } = useToast();
 
@@ -189,18 +190,117 @@ const DaftarSoal = () => {
     setCurrentPage(1);
   };
 
-  const handleDownload = async (fileUrl: string, fileName: string) => {
+  const getFilePathFromUrl = (fileUrl: string) => {
     try {
-      console.log('Starting download for:', fileName);
-      
-      // Try direct fetch first since it's more reliable
-      const response = await fetch(fileUrl);
+      const url = new URL(fileUrl);
+      // Extract path from Supabase storage URL
+      // Format: /storage/v1/object/public/bucket/path/to/file
+      const pathParts = url.pathname.split('/');
+      const bucketIndex = pathParts.findIndex(part => part === 'public') + 1;
+      if (bucketIndex > 0 && bucketIndex < pathParts.length) {
+        return pathParts.slice(bucketIndex + 1).join('/');
+      }
+      // Fallback: try to extract last 3 parts
+      return pathParts.slice(-3).join('/');
+    } catch (error) {
+      console.error('Error parsing file URL:', error);
+      return null;
+    }
+  };
+
+  const handleDownload = async (fileUrl: string, fileName: string, id: string) => {
+    setDownloading(id);
+    
+    try {
+      console.log('Starting download for:', fileName, 'URL:', fileUrl);
+
+      // Method 1: Try Supabase Storage download method first
+      const filePath = getFilePathFromUrl(fileUrl);
+      if (filePath) {
+        console.log('Trying Supabase storage download, file path:', filePath);
+        
+        const { data, error } = await supabase.storage
+          .from('soal-files')
+          .download(filePath);
+
+        if (!error && data) {
+          console.log('Supabase storage download successful');
+          const url = window.URL.createObjectURL(data);
+          const a = document.createElement('a');
+          a.style.display = 'none';
+          a.href = url;
+          a.download = fileName;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(url);
+          
+          toast({
+            title: "Berhasil",
+            description: "File berhasil didownload",
+          });
+          return;
+        } else {
+          console.log('Supabase storage download failed:', error);
+        }
+      }
+
+      // Method 2: Try signed URL method
+      console.log('Trying signed URL method');
+      if (filePath) {
+        const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+          .from('soal-files')
+          .createSignedUrl(filePath, 60); // 60 seconds expiry
+
+        if (!signedUrlError && signedUrlData?.signedUrl) {
+          console.log('Signed URL created:', signedUrlData.signedUrl);
+          
+          const response = await fetch(signedUrlData.signedUrl);
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          
+          const blob = await response.blob();
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.style.display = 'none';
+          a.href = url;
+          a.download = fileName;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(url);
+          
+          toast({
+            title: "Berhasil",
+            description: "File berhasil didownload",
+          });
+          return;
+        } else {
+          console.log('Signed URL creation failed:', signedUrlError);
+        }
+      }
+
+      // Method 3: Direct fetch with proper headers
+      console.log('Trying direct fetch method');
+      const response = await fetch(fileUrl, {
+        method: 'GET',
+        headers: {
+          'Accept': '*/*',
+        },
+        mode: 'cors'
+      });
       
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}`);
       }
       
       const blob = await response.blob();
+      
+      // Ensure we have content
+      if (blob.size === 0) {
+        throw new Error('Downloaded file is empty');
+      }
       
       // Create download link
       const url = window.URL.createObjectURL(blob);
@@ -217,13 +317,32 @@ const DaftarSoal = () => {
         title: "Berhasil",
         description: "File berhasil didownload",
       });
+      
     } catch (error: any) {
       console.error('Download error:', error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Gagal mengunduh file. Silakan coba lagi.",
-      });
+      
+      // Method 4: Fallback - open in new tab
+      console.log('All download methods failed, trying fallback: open in new tab');
+      try {
+        const newWindow = window.open(fileUrl, '_blank');
+        if (newWindow) {
+          toast({
+            title: "Info",
+            description: "File dibuka di tab baru. Anda dapat mengunduhnya dari sana.",
+          });
+        } else {
+          throw new Error('Popup blocked');
+        }
+      } catch (fallbackError) {
+        console.error('Fallback method also failed:', fallbackError);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: `Gagal mengunduh file: ${error.message || 'Unknown error'}. Coba klik tombol 'Lihat' untuk membuka file di tab baru.`,
+        });
+      }
+    } finally {
+      setDownloading(null);
     }
   };
 
@@ -232,15 +351,19 @@ const DaftarSoal = () => {
 
     try {
       // Extract file path from URL
-      const urlParts = fileUrl.split('/');
-      const filePath = urlParts.slice(-3).join('/');
+      const filePath = getFilePathFromUrl(fileUrl);
 
-      // Delete from storage
-      const { error: storageError } = await supabase.storage
-        .from('soal-files')
-        .remove([filePath]);
+      if (filePath) {
+        // Delete from storage
+        const { error: storageError } = await supabase.storage
+          .from('soal-files')
+          .remove([filePath]);
 
-      if (storageError) throw storageError;
+        if (storageError) {
+          console.error('Storage deletion error:', storageError);
+          // Continue with database deletion even if storage deletion fails
+        }
+      }
 
       // Delete from database
       const { error: dbError } = await supabase
@@ -530,20 +653,28 @@ const DaftarSoal = () => {
                                   variant="outline"
                                   size="sm"
                                   onClick={() => window.open(item.file_url, '_blank')}
+                                  title="Lihat file"
                                 >
                                   <Eye className="h-4 w-4" />
                                 </Button>
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => handleDownload(item.file_url, item.file_name)}
+                                  onClick={() => handleDownload(item.file_url, item.file_name, item.id)}
+                                  disabled={downloading === item.id}
+                                  title="Unduh file"
                                 >
-                                  <Download className="h-4 w-4" />
+                                  {downloading === item.id ? (
+                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                                  ) : (
+                                    <Download className="h-4 w-4" />
+                                  )}
                                 </Button>
                                 <Button
                                   variant="outline"
                                   size="sm"
                                   onClick={() => handleDelete(item.id, item.file_url)}
+                                  title="Hapus file"
                                 >
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
