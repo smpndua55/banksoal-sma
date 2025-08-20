@@ -23,11 +23,12 @@ const DaftarSoal: React.FC = () => {
     fetchSoal();
   }, []);
 
+  // Ambil daftar soal dari tabel Supabase
   const fetchSoal = async () => {
     setLoading(true);
     const { data, error } = await supabase.from("soal").select("*");
     if (error) {
-      console.error("Error fetching soal:", error);
+      console.error("Error fetching soal:", error.message);
       toast({
         variant: "destructive",
         title: "Error",
@@ -40,24 +41,25 @@ const DaftarSoal: React.FC = () => {
     setLoading(false);
   };
 
+  // Fungsi download file
   const handleDownload = async (fileUrl: string, fileName: string, id: number) => {
     try {
       setDownloading(id);
       console.log("Starting download for:", fileName);
 
-      // Jika file public → langsung buka
+      // Jika bucket public → langsung buka di tab baru
       if (fileUrl.includes("/object/public/")) {
         window.open(fileUrl, "_blank");
         setDownloading(null);
         return;
       }
 
-      // Parse file path untuk private bucket
+      // Ambil path relatif dari URL Supabase
       const match = fileUrl.match(/soal-files\/(.+)$/);
       if (!match) throw new Error("Gagal parsing file path");
-      const filePath = match[1];
+      const filePath = match[1]; // contoh: "ujian-123/matematika.pdf"
 
-      // Buat signed URL
+      // Buat signed URL untuk private bucket
       const { data, error } = await supabase.storage
         .from("soal-files")
         .createSignedUrl(filePath, 60);
@@ -66,13 +68,13 @@ const DaftarSoal: React.FC = () => {
         throw new Error(error?.message || "Gagal membuat signed URL");
       }
 
-      // Fetch file dengan signed URL
+      // Fetch file dari signed URL
       const response = await fetch(data.signedUrl);
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
       const blob = await response.blob();
 
-      // Trigger download
+      // Trigger download dengan Blob
       const urlBlob = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.style.display = "none";
@@ -88,7 +90,7 @@ const DaftarSoal: React.FC = () => {
         description: `Soal "${fileName}" berhasil diunduh`,
       });
     } catch (error: any) {
-      console.error("Download error:", error);
+      console.error("Download error:", error.message);
       toast({
         variant: "destructive",
         title: "Error",
