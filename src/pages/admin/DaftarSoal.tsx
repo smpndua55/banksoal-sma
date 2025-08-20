@@ -194,75 +194,124 @@ const DaftarSoal = () => {
       console.log('Starting download for:', fileName);
       console.log('File URL:', fileUrl);
       
-      // Method 1: Try using Supabase storage download method first
+      // Method 1: Use Supabase storage API directly with known bucket name
       try {
-        // Extract file path from URL
-        const url = new URL(fileUrl);
-        const pathParts = url.pathname.split('/');
+        // Extract file path from the URL
+        let filePath = '';
         
-        // Find the bucket name and file path
-        const bucketIndex = pathParts.findIndex(part => part === 'storage');
-        if (bucketIndex !== -1 && pathParts[bucketIndex + 2] === 'object') {
-          const bucketName = pathParts[bucketIndex + 3];
-          const filePath = pathParts.slice(bucketIndex + 4).join('/');
-          
-          console.log('Bucket:', bucketName, 'Path:', filePath);
-          
-          // Download using Supabase storage
+        // Handle different URL formats
+        if (fileUrl.includes('soal-files/')) {
+          // Extract everything after 'soal-files/'
+          const parts = fileUrl.split('soal-files/');
+          if (parts.length > 1) {
+            filePath = parts[1].split('?')[0]; // Remove query parameters if any
+          }
+        } else {
+          // Fallback: try to extract from various URL patterns
+          const url = new URL(fileUrl);
+          const pathParts = url.pathname.split('/');
+          const bucketIndex = pathParts.findIndex(part => part === 'soal-files');
+          if (bucketIndex !== -1) {
+            filePath = pathParts.slice(bucketIndex + 1).join('/');
+          }
+        }
+        
+        console.log('Extracted file path:', filePath);
+        
+        if (filePath) {
+          // Try direct download from known bucket
           const { data, error } = await supabase.storage
-            .from(bucketName)
+            .from('soal-files')
             .download(filePath);
             
-          if (error) {
-            console.warn('Supabase storage download failed:', error);
-            throw error;
+          if (!error && data) {
+            console.log('Storage download successful');
+            const downloadUrl = window.URL.createObjectURL(data);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = downloadUrl;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(downloadUrl);
+            
+            toast({
+              title: "Berhasil",
+              description: "File berhasil didownload",
+            });
+            return;
+          } else {
+            console.warn('Storage download failed:', error);
           }
-          
-          // Create download link
-          const url = window.URL.createObjectURL(data);
-          const a = document.createElement('a');
-          a.style.display = 'none';
-          a.href = url;
-          a.download = fileName;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          window.URL.revokeObjectURL(url);
-          
-          toast({
-            title: "Berhasil",
-            description: "File berhasil didownload",
-          });
-          return;
         }
       } catch (storageError) {
-        console.warn('Supabase storage method failed, trying direct fetch:', storageError);
+        console.warn('Storage API method failed:', storageError);
       }
       
-      // Method 2: Fallback to direct fetch with signed URL
+      // Method 2: Try signed URL with known bucket
       try {
-        // Get signed URL for download
-        const url = new URL(fileUrl);
-        const pathParts = url.pathname.split('/');
-        const bucketIndex = pathParts.findIndex(part => part === 'storage');
+        let filePath = '';
         
-        if (bucketIndex !== -1 && pathParts[bucketIndex + 2] === 'object') {
-          const bucketName = pathParts[bucketIndex + 3];
-          const filePath = pathParts.slice(bucketIndex + 4).join('/');
-          
+        if (fileUrl.includes('soal-files/')) {
+          const parts = fileUrl.split('soal-files/');
+          if (parts.length > 1) {
+            filePath = parts[1].split('?')[0];
+          }
+        }
+        
+        if (filePath) {
+          console.log('Trying signed URL for path:', filePath);
           const { data: signedUrlData, error: signedUrlError } = await supabase.storage
-            .from(bucketName)
-            .createSignedUrl(filePath, 60); // 60 seconds expiry
+            .from('soal-files')
+            .createSignedUrl(filePath, 300); // 5 minutes
             
-          if (signedUrlError) throw signedUrlError;
-          
-          // Download using signed URL
-          const response = await fetch(signedUrlData.signedUrl);
-          if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-          
+          if (!signedUrlError && signedUrlData?.signedUrl) {
+            console.log('Signed URL created:', signedUrlData.signedUrl);
+            const response = await fetch(signedUrlData.signedUrl);
+            
+            if (response.ok) {
+              const blob = await response.blob();
+              const downloadUrl = window.URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.style.display = 'none';
+              a.href = downloadUrl;
+              a.download = fileName;
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+              window.URL.revokeObjectURL(downloadUrl);
+              
+              toast({
+                title: "Berhasil",
+                description: "File berhasil didownload",
+              });
+              return;
+            }
+          } else {
+            console.warn('Signed URL creation failed:', signedUrlError);
+          }
+        }
+      } catch (signedUrlError) {
+        console.warn('Signed URL method failed:', signedUrlError);
+      }
+      
+      // Method 3: Try direct fetch with authentication
+      try {
+        const session = await supabase.auth.getSession();
+        const headers: Record<string, string> = {};
+        
+        if (session.data.session?.access_token) {
+          headers['Authorization'] = `Bearer ${session.data.session.access_token}`;
+        }
+        
+        const response = await fetch(fileUrl, {
+          method: 'GET',
+          headers,
+        });
+        
+        if (response.ok) {
           const blob = await response.blob();
-          
-          // Create download link
           const downloadUrl = window.URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.style.display = 'none';
@@ -279,41 +328,50 @@ const DaftarSoal = () => {
           });
           return;
         }
-      } catch (signedUrlError) {
-        console.warn('Signed URL method failed, trying direct fetch:', signedUrlError);
+      } catch (fetchError) {
+        console.warn('Authenticated fetch failed:', fetchError);
       }
       
-      // Method 3: Final fallback - direct fetch (original method)
-      const response = await fetch(fileUrl);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      // Method 4: Try direct fetch without authentication (for public buckets)
+      try {
+        const response = await fetch(fileUrl);
+        
+        if (response.ok) {
+          const blob = await response.blob();
+          const downloadUrl = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.style.display = 'none';
+          a.href = downloadUrl;
+          a.download = fileName;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(downloadUrl);
+          
+          toast({
+            title: "Berhasil",
+            description: "File berhasil didownload",
+          });
+          return;
+        }
+      } catch (publicFetchError) {
+        console.warn('Public fetch failed:', publicFetchError);
       }
       
-      const blob = await response.blob();
-      
-      // Create download link
-      const downloadUrl = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.style.display = 'none';
-      a.href = downloadUrl;
-      a.download = fileName;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(downloadUrl);
-      
+      // Method 5: Open in new window as final fallback
+      console.log('All download methods failed, opening in new window');
+      window.open(fileUrl, '_blank');
       toast({
-        title: "Berhasil",
-        description: "File berhasil didownload",
+        title: "Info",
+        description: "File dibuka di tab baru. Silakan klik kanan dan pilih 'Save as' untuk download.",
       });
       
     } catch (error: any) {
-      console.error('Download error:', error);
+      console.error('All download methods failed:', error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: `Gagal mengunduh file: ${error.message}. Silakan coba lagi.`,
+        description: "Gagal mengunduh file. Pastikan file masih ada dan Anda memiliki akses.",
       });
     }
   };
@@ -322,28 +380,47 @@ const DaftarSoal = () => {
     if (!confirm('Apakah Anda yakin ingin menghapus soal ini?')) return;
 
     try {
-      // Extract file path from URL
-      const url = new URL(fileUrl);
-      const pathParts = url.pathname.split('/');
+      // Extract file path from URL for soal-files bucket
+      let filePath = '';
       
-      // Find the bucket name and file path
-      const bucketIndex = pathParts.findIndex(part => part === 'storage');
-      if (bucketIndex !== -1 && pathParts[bucketIndex + 2] === 'object') {
-        const bucketName = pathParts[bucketIndex + 3];
-        const filePath = pathParts.slice(bucketIndex + 4).join('/');
-        
-        // Delete from storage
-        const { error: storageError } = await supabase.storage
-          .from(bucketName)
-          .remove([filePath]);
-
-        if (storageError) {
-          console.warn('Storage deletion failed:', storageError);
-          // Continue with database deletion even if storage deletion fails
+      if (fileUrl.includes('soal-files/')) {
+        // Extract everything after 'soal-files/'
+        const parts = fileUrl.split('soal-files/');
+        if (parts.length > 1) {
+          filePath = parts[1].split('?')[0]; // Remove query parameters if any
+        }
+      } else {
+        // Fallback: try to extract from various URL patterns
+        const url = new URL(fileUrl);
+        const pathParts = url.pathname.split('/');
+        const bucketIndex = pathParts.findIndex(part => part === 'soal-files');
+        if (bucketIndex !== -1) {
+          filePath = pathParts.slice(bucketIndex + 1).join('/');
         }
       }
 
-      // Delete from database
+      console.log('Deleting file with path:', filePath);
+
+      // Try to delete from storage if we could parse the path
+      if (filePath) {
+        try {
+          const { error: storageError } = await supabase.storage
+            .from('soal-files')
+            .remove([filePath]);
+
+          if (storageError) {
+            console.warn('Storage deletion failed:', storageError);
+            // Continue with database deletion even if storage deletion fails
+          } else {
+            console.log('File deleted from storage successfully');
+          }
+        } catch (storageDeleteError) {
+          console.warn('Storage deletion error:', storageDeleteError);
+          // Continue with database deletion
+        }
+      }
+
+      // Delete from database (this should always work)
       const { error: dbError } = await supabase
         .from('soal_uploads')
         .delete()
@@ -361,7 +438,7 @@ const DaftarSoal = () => {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Gagal menghapus soal",
+        description: "Gagal menghapus soal dari database",
       });
     }
   };
