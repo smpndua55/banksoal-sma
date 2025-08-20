@@ -35,6 +35,35 @@ interface FilterOptions {
   guru: Array<{ user_id: string; nama: string }>;
 }
 
+const BUCKET = 'soal-files';
+
+/** Ekstrak path internal dari URL Supabase Storage (public/sign/authenticated) */
+const extractStoragePath = (fileUrl: string): string | null => {
+  try {
+    const u = new URL(fileUrl);
+    const pathname = u.pathname; // contoh: /storage/v1/object/public/soal-files/folder/a.pdf
+    // coba pola umum
+    const re = new RegExp(`/storage/v1/object/(public|sign|authenticated)/${BUCKET}/(.+)$`);
+    const m = pathname.match(re);
+    if (m && m[2]) return decodeURIComponent(m[2]);
+
+    // fallback: cari segmen bucket lalu ambil sisanya
+    const parts = pathname.split('/').filter(Boolean);
+    const idx = parts.findIndex(p => p === BUCKET);
+    if (idx !== -1 && idx < parts.length - 1) {
+      return decodeURIComponent(parts.slice(idx + 1).join('/'));
+    }
+
+    // jika yang tersimpan ternyata memang sudah berupa path
+    if (!fileUrl.startsWith('http')) return fileUrl;
+
+    return null;
+  } catch {
+    // jika string bukan URL valid, anggap itu sudah path
+    return fileUrl || null;
+  }
+};
+
 const DaftarSoal = () => {
   const [soalUploads, setSoalUploads] = useState<SoalUpload[]>([]);
   const [loading, setLoading] = useState(true);
@@ -184,49 +213,77 @@ const DaftarSoal = () => {
     setCurrentPage(1);
   };
 
-  // ✅ fungsi download sudah diperbaiki
+  /** Util: trigger download dari Blob */
+  const downloadBlob = (blob: Blob, fileName: string) => {
+    const urlBlob = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.style.display = 'none';
+    a.href = urlBlob;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(urlBlob);
+  };
+
+  /** Preview: buka tab menggunakan signed URL bila perlu */
+  const handlePreview = async (fileUrl: string) => {
+    try {
+      const path = extractStoragePath(fileUrl);
+      if (!path) {
+        window.open(fileUrl, '_blank');
+        return;
+      }
+      // Buat signed URL singkat untuk preview (private bucket)
+      const { data, error } = await supabase.storage
+        .from(BUCKET)
+        .createSignedUrl(path, 60);
+      if (!error && data?.signedUrl) {
+        window.open(data.signedUrl, '_blank');
+      } else {
+        // Jika gagal, coba buka URL aslinya
+        window.open(fileUrl, '_blank');
+      }
+    } catch {
+      window.open(fileUrl, '_blank');
+    }
+  };
+
+  /** ✅ Download super-robust: coba .download → fallback signed URL → fallback open */
   const handleDownload = async (fileUrl: string, fileName: string) => {
     try {
-      console.log("Starting download for:", fileName);
+      const path = extractStoragePath(fileUrl);
+      if (!path) throw new Error('Path file tidak valid.');
 
-      const url = new URL(fileUrl);
-      const path = decodeURIComponent(url.pathname.split("/object/public/soal-files/")[1]);
-
-      if (!path) throw new Error("File path tidak valid");
-
-      const { data, error } = await supabase.storage
-        .from("soal-files")
-        .createSignedUrl(path, 60);
-
-      if (error || !data?.signedUrl) {
-        throw new Error(error?.message || "Gagal membuat signed URL");
+      // 1) Cara utama: ambil Blob langsung dari Storage
+      const { data: blob, error } = await supabase.storage.from(BUCKET).download(path);
+      if (!error && blob) {
+        downloadBlob(blob, fileName);
+        toast({ title: 'Berhasil', description: 'File berhasil diunduh.' });
+        return;
       }
 
-      const response = await fetch(data.signedUrl);
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      // 2) Fallback: buat signed URL lalu fetch → blob
+      const { data: signed, error: signErr } = await supabase.storage
+        .from(BUCKET)
+        .createSignedUrl(path, 120 /* detik */);
+      if (signErr || !signed?.signedUrl) throw signErr || new Error('Gagal membuat signed URL.');
 
-      const blob = await response.blob();
-
-      const urlBlob = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.style.display = "none";
-      a.href = urlBlob;
-      a.download = fileName;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(urlBlob);
-
+      const resp = await fetch(signed.signedUrl);
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const signedBlob = await resp.blob();
+      downloadBlob(signedBlob, fileName);
+      toast({ title: 'Berhasil', description: 'File berhasil diunduh.' });
+    } catch (err) {
+      console.error('Download error:', err);
+      try {
+        // 3) Fallback terakhir: coba buka di tab baru (biar user bisa save manually)
+        window.open(fileUrl, '_blank');
+      } catch {}
       toast({
-        title: "Berhasil",
-        description: "File berhasil diunduh",
-      });
-    } catch (error: any) {
-      console.error("Download error:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Gagal mengunduh file. Silakan coba lagi.",
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Gagal mengunduh file. Coba lagi atau hubungi admin.',
       });
     }
   };
@@ -235,12 +292,12 @@ const DaftarSoal = () => {
     if (!confirm('Apakah Anda yakin ingin menghapus soal ini?')) return;
 
     try {
-      const urlParts = fileUrl.split('/');
-      const filePath = urlParts.slice(-3).join('/');
+      const path = extractStoragePath(fileUrl);
+      if (!path) throw new Error('Path file tidak valid.');
 
       const { error: storageError } = await supabase.storage
-        .from('soal-files')
-        .remove([filePath]);
+        .from(BUCKET)
+        .remove([path]);
 
       if (storageError) throw storageError;
 
@@ -297,8 +354,135 @@ const DaftarSoal = () => {
         </header>
 
         <div className="p-6 space-y-6">
-          {/* Search dan Filter */}
-          {/* ... Bagian filter tetap sama seperti sebelumnya ... */}
+          {/* Search & Filters */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Search className="h-5 w-5" />
+                Pencarian & Filter
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <form onSubmit={handleSearch} className="flex gap-2">
+                <Input
+                  placeholder="Cari berdasarkan nama file..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="flex-1"
+                />
+                <Button type="submit">
+                  <Search className="h-4 w-4 mr-2" />
+                  Cari
+                </Button>
+              </form>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+                <div>
+                  <Label>Guru</Label>
+                  <Select
+                    value={filters.guru_id}
+                    onValueChange={(value) => handleFilterChange('guru_id', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Semua guru" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Semua guru</SelectItem>
+                      {filterOptions.guru.map((item) => (
+                        <SelectItem key={item.user_id} value={item.user_id}>
+                          {item.nama}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label>Tahun Ajaran</Label>
+                  <Select
+                    value={filters.tahun_ajaran_id}
+                    onValueChange={(value) => handleFilterChange('tahun_ajaran_id', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Semua tahun" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Semua tahun</SelectItem>
+                      {filterOptions.tahunAjaran.map((item) => (
+                        <SelectItem key={item.id} value={item.id}>
+                          {item.nama}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label>Mata Pelajaran</Label>
+                  <Select
+                    value={filters.mapel_id}
+                    onValueChange={(value) => handleFilterChange('mapel_id', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Semua mapel" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Semua mapel</SelectItem>
+                      {filterOptions.mapel.map((item) => (
+                        <SelectItem key={item.id} value={item.id}>
+                          {item.nama}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label>Kelas</Label>
+                  <Select
+                    value={filters.kelas_id}
+                    onValueChange={(value) => handleFilterChange('kelas_id', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Semua kelas" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Semua kelas</SelectItem>
+                      {filterOptions.kelas.map((item) => (
+                        <SelectItem key={item.id} value={item.id}>
+                          {item.nama}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label>Jenis Ujian</Label>
+                  <Select
+                    value={filters.jenis_ujian_id}
+                    onValueChange={(value) => handleFilterChange('jenis_ujian_id', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Semua jenis" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Semua jenis</SelectItem>
+                      {filterOptions.jenisUjian.map((item) => (
+                        <SelectItem key={item.id} value={item.id}>
+                          {item.nama}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <Button variant="outline" onClick={clearFilters}>
+                Reset Filter
+              </Button>
+            </CardContent>
+          </Card>
 
           {/* Results */}
           <Card>
@@ -323,100 +507,170 @@ const DaftarSoal = () => {
               ) : soalUploads.length === 0 ? (
                 <div className="text-center py-8">
                   <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground">Tidak ada soal yang ditemukan</p>
+                  <p className="text-muted-foreground">
+                    Tidak ada soal yang ditemukan
+                  </p>
                 </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>File</TableHead>
-                        <TableHead>Guru</TableHead>
-                        <TableHead>Mata Pelajaran</TableHead>
-                        <TableHead>Kelas</TableHead>
-                        <TableHead>Jenis Ujian</TableHead>
-                        <TableHead>Semester</TableHead>
-                        <TableHead>Tahun Ajaran</TableHead>
-                        <TableHead>Tanggal Upload</TableHead>
-                        <TableHead>Aksi</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {soalUploads.map((item) => (
-                        <TableRow key={item.id}>
-                          <TableCell>
-                            <div>
-                              <div className="font-medium">{item.file_name}</div>
-                              <div className="text-sm text-muted-foreground">
-                                {formatFileSize(item.file_size || 0)}
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{item.guru?.nama}</Badge>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{item.mapel?.nama}</Badge>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex flex-wrap gap-1">
-                              {item.kelas_names?.map((namaKelas, index) => (
-                                <Badge key={index} variant="outline">
-                                  {namaKelas}
-                                </Badge>
-                              ))}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{item.jenis_ujian?.nama}</Badge>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline" className="capitalize">
-                              {item.semester}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{item.tahun_ajaran?.nama}</Badge>
-                          </TableCell>
-                          <TableCell>
-                            {new Date(item.uploaded_at).toLocaleDateString('id-ID', {
-                              year: 'numeric',
-                              month: 'short',
-                              day: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => window.open(item.file_url, '_blank')}
-                              >
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleDownload(item.file_url, item.file_name)}
-                              >
-                                <Download className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleDelete(item.id, item.file_url)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
+                <>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>File</TableHead>
+                          <TableHead>Guru</TableHead>
+                          <TableHead>Mata Pelajaran</TableHead>
+                          <TableHead>Kelas</TableHead>
+                          <TableHead>Jenis Ujian</TableHead>
+                          <TableHead>Semester</TableHead>
+                          <TableHead>Tahun Ajaran</TableHead>
+                          <TableHead>Tanggal Upload</TableHead>
+                          <TableHead>Aksi</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
+                      </TableHeader>
+                      <TableBody>
+                        {soalUploads.map((item) => (
+                          <TableRow key={item.id}>
+                            <TableCell>
+                              <div>
+                                <div className="font-medium">{item.file_name}</div>
+                                <div className="text-sm text-muted-foreground">
+                                  {formatFileSize(item.file_size || 0)}
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline">
+                                {item.guru?.nama}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline">
+                                {item.mapel?.nama}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex flex-wrap gap-1">
+                                {item.kelas_names?.map((namaKelas, index) => (
+                                  <Badge key={index} variant="outline">
+                                    {namaKelas}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline">
+                                {item.jenis_ujian?.nama}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className="capitalize">
+                                {item.semester}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline">
+                                {item.tahun_ajaran?.nama}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              {new Date(item.uploaded_at).toLocaleDateString('id-ID', {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handlePreview(item.file_url)}
+                                  title="Preview"
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleDownload(item.file_url, item.file_name)}
+                                  title="Download"
+                                >
+                                  <Download className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleDelete(item.id, item.file_url)}
+                                  title="Hapus"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  {/* Pagination */}
+                  {totalPages > 1 && (
+                    <div className="flex items-center justify-between mt-4">
+                      <div className="text-sm text-muted-foreground">
+                        Halaman {currentPage} dari {totalPages}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                          disabled={currentPage === 1}
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                          Sebelumnya
+                        </Button>
+
+                        <div className="flex items-center gap-1">
+                          {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                            let pageNum;
+                            if (totalPages <= 5) {
+                              pageNum = i + 1;
+                            } else if (currentPage <= 3) {
+                              pageNum = i + 1;
+                            } else if (currentPage >= totalPages - 2) {
+                              pageNum = totalPages - 4 + i;
+                            } else {
+                              pageNum = currentPage - 2 + i;
+                            }
+                            return (
+                              <Button
+                                key={pageNum}
+                                variant={pageNum === currentPage ? 'default' : 'outline'}
+                                size="sm"
+                                onClick={() => setCurrentPage(pageNum)}
+                              >
+                                {pageNum}
+                              </Button>
+                            );
+                          })}
+                        </div>
+
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                          disabled={currentPage === totalPages}
+                        >
+                          Selanjutnya
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
             </CardContent>
           </Card>
